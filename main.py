@@ -62,3 +62,10 @@ print("\n=== SUMMARY ===")
 s = summary(results)
 for k, v in s.items():
     print(f"  {k}: {v}")    
+
+from fuzzer.reporter.report_generator import generate_html, generate_json
+from fuzzer.oracle.detector import summary as get_summary
+
+s = get_summary(results)
+generate_html(results, s, api_title=spec.title, api_version=spec.version)
+generate_json(results, s, api_title=spec.title)
