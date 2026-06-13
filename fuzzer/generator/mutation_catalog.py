@@ -1,27 +1,27 @@
 """
 fuzzer/generator/mutation_catalog.py
- 
+
 Katalog mutacija: za svaki OpenAPI tip podatka definiše
 listu namerno loših vrednosti koje fuzzer šalje API-ju.
- 
+
 Kako se čita:
     CATALOG["string"] → lista loših string vrednosti
     CATALOG["integer"] → lista loših integer vrednosti
     itd.
 """
- 
+
 # Velika vrednost za testiranje buffer overflow / performansi
 _LONG_STRING = "A" * 10_000
- 
+
 # SQL injection — čest bezbednosni propust
 _SQL_INJECTION = "' OR '1'='1"
- 
+
 # Null bajt — može pokvariti C-bazirane sisteme iza API-ja
 _NULL_BYTE = "test\x00injection"
- 
- 
+
+
 CATALOG: dict[str, list] = {
- 
+
     "string": [
         "",                  # prazan string — čest edge case
         " ",                 # samo razmak
@@ -31,9 +31,11 @@ CATALOG: dict[str, list] = {
         123,                 # integer umjesto stringa (type mutation)
         None,                # null — šta se desi ako pošaljemo ništa?
         [],                  # lista umjesto stringa
-        True,                # boolean umjesto stringa
+        True, 
+        '{"a":{"b":{"c":{"d":{"e":"deep"}}}}}',
+        "A" * 50_000,                              # boolean umjesto stringa
     ],
- 
+
     "integer": [
         0,                   # nula — boundary
         -1,                  # negativan broj — čest edge case
@@ -47,7 +49,7 @@ CATALOG: dict[str, list] = {
         3.14,                # decimalni broj umjesto celog
         True,                # boolean (u Pythonu je bool podklasa int — API možda prihvati)
     ],
- 
+
     "boolean": [
         "true",              # string "true" — API možda ne parsira ispravno
         "false",             # string "false"
@@ -58,7 +60,7 @@ CATALOG: dict[str, list] = {
         "",                  # prazan string
         "random_string",     # potpuno nevalidan
     ],
- 
+
     "number": [
         0,                   # nula
         -1,                  # negativan
@@ -71,7 +73,7 @@ CATALOG: dict[str, list] = {
         "abc",               # string umjesto broja
         None,                # null
     ],
- 
+
     "array": [
         [],                  # prazna lista — boundary
         [None],              # lista sa null elementom
@@ -81,7 +83,7 @@ CATALOG: dict[str, list] = {
         {},                  # objekat umjesto liste
         [1, "two", None, True],  # mješoviti tipovi unutar liste
     ],
- 
+
     "object": [
         {},                  # prazan objekat
         None,                # null
@@ -89,7 +91,7 @@ CATALOG: dict[str, list] = {
         [],                  # lista umjesto objekta
         {"__proto__": {"admin": True}},  # prototype pollution pokušaj
     ],
- 
+
     # Fallback za tipove koje ne prepoznajemo
     "unknown": [
         None,
@@ -98,19 +100,19 @@ CATALOG: dict[str, list] = {
         [],
     ],
 }
- 
- 
+
+
 def get_mutations(schema_type: str) -> list:
     """
     Vrati listu mutacija za dati OpenAPI tip.
- 
+
     Args:
         schema_type: tip iz OpenAPI spec-a ("string", "integer", itd.)
- 
+
     Returns:
         Lista loših vrednosti za taj tip.
         Ako tip nije poznat, vraća fallback listu.
- 
+
     Primer:
         get_mutations("string") → ["", " ", "AAAA...", ...]
         get_mutations("integer") → [0, -1, 99999, "abc", ...]
