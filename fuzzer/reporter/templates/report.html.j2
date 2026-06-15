@@ -1,0 +1,254 @@
+cat /mnt/user-data/outputs/report.html.j2
+Output
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAPI Fuzzer — Izveštaj</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #0f1117;
+            color: #e2e8f0;
+            padding: 2rem;
+        }
+
+        h1 { font-size: 1.8rem; font-weight: 700; color: #f8fafc; }
+        h2 { font-size: 1.1rem; font-weight: 600; color: #94a3b8; text-transform: uppercase;
+             letter-spacing: 0.05em; margin-bottom: 1rem; }
+
+        .header {
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .header p { color: #64748b; margin-top: 0.3rem; font-size: 0.9rem; }
+
+        /* Summary kartice */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .card {
+            background: #1e293b;
+            border-radius: 10px;
+            padding: 1.2rem 1.5rem;
+            border: 1px solid #334155;
+        }
+
+        .card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase;
+                       letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+        .card .value { font-size: 2rem; font-weight: 700; }
+
+        .card.total   .value { color: #f8fafc; }
+        .card.passed  .value { color: #22c55e; }
+        .card.failed  .value { color: #ef4444; }
+        .card.server  .value { color: #f97316; }
+        .card.contract .value { color: #eab308; }
+        .card.perf    .value { color: #8b5cf6; }
+
+        /* Tabela */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #1e293b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        thead {
+            background: #1e293b;
+        }
+
+        thead th {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tbody tr {
+            border-top: 1px solid #1e293b;
+            transition: background 0.1s;
+        }
+
+        tbody tr:hover { background: #1e293b55; }
+
+        tbody td {
+            padding: 0.75rem 1rem;
+            vertical-align: top;
+            color: #cbd5e1;
+        }
+
+        .method {
+            font-weight: 700;
+            font-family: monospace;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .method.GET    { background: #064e3b; color: #6ee7b7; }
+        .method.POST   { background: #1e3a5f; color: #93c5fd; }
+        .method.PUT    { background: #451a03; color: #fdba74; }
+        .method.DELETE { background: #450a0a; color: #fca5a5; }
+
+        .status {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .status.ok   { color: #22c55e; }
+        .status.warn { color: #eab308; }
+        .status.err  { color: #ef4444; }
+
+        .anomaly-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            margin: 0.1rem 0.1rem 0.1rem 0;
+        }
+
+        .tag-SERVER_FAILURE    { background: #431407; color: #fb923c; }
+        .tag-CONTRACT_MISMATCH { background: #422006; color: #fbbf24; }
+        .tag-PERFORMANCE_ANOMALY { background: #2e1065; color: #c4b5fd; }
+
+        .payload {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #64748b;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .passed-row td { opacity: 0.45; }
+
+        .footer {
+            margin-top: 2rem;
+            color: #334155;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .section { margin-bottom: 2.5rem; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🔍 OpenAPI Fuzzer — Izveštaj</h1>
+    <p>API: <strong>{{ title }}</strong> &nbsp;·&nbsp;
+       Verzija: <strong>{{ version }}</strong> &nbsp;·&nbsp;
+       Generisano: <strong>{{ generated_at }}</strong></p>
+</div>
+
+<!-- Summary kartice -->
+<div class="section">
+    <h2>Pregled</h2>
+    <div class="summary">
+        <div class="card total">
+            <div class="label">Ukupno testova</div>
+            <div class="value">{{ summary.total }}</div>
+        </div>
+        <div class="card passed">
+            <div class="label">Prošlo</div>
+            <div class="value">{{ summary.passed }}</div>
+        </div>
+        <div class="card failed">
+            <div class="label">Anomalija</div>
+            <div class="value">{{ summary.failed }}</div>
+        </div>
+        <div class="card server">
+            <div class="label">Server Failure</div>
+            <div class="value">{{ summary.server_failures }}</div>
+        </div>
+        <div class="card contract">
+            <div class="label">Contract Mismatch</div>
+            <div class="value">{{ summary.contract_mismatches }}</div>
+        </div>
+        <div class="card perf">
+            <div class="label">Performance</div>
+            <div class="value">{{ summary.performance_anomalies }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela rezultata -->
+<div class="section">
+    <h2>Rezultati testova</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Metoda</th>
+                    <th>Endpoint</th>
+                    <th>Status</th>
+                    <th>Vreme</th>
+                    <th>Mutacija</th>
+                    <th>Polje</th>
+                    <th>Anomalije</th>
+                    <th>Payload</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in results %}
+                <tr class="{{ 'passed-row' if r.passed else '' }}">
+                    <td><span class="method {{ r.method }}">{{ r.method }}</span></td>
+                    <td style="font-family: monospace;">{{ r.endpoint }}</td>
+                    <td>
+                        {% if r.status_code >= 500 or r.status_code == 0 %}
+                            <span class="status err">{{ r.status_code }}</span>
+                        {% elif r.status_code >= 400 %}
+                            <span class="status warn">{{ r.status_code }}</span>
+                        {% else %}
+                            <span class="status ok">{{ r.status_code }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ r.response_time_ms }}ms</td>
+                    <td>{{ r.mutation_type }}</td>
+                    <td style="font-family: monospace;">{{ r.mutated_field }}</td>
+                    <td>
+                        {% for anomaly in r.anomalies %}
+                            {% if 'SERVER_FAILURE' in anomaly %}
+                                <span class="anomaly-tag tag-SERVER_FAILURE">SERVER FAILURE</span>
+                            {% elif 'CONTRACT_MISMATCH' in anomaly %}
+                                <span class="anomaly-tag tag-CONTRACT_MISMATCH">CONTRACT MISMATCH</span>
+                            {% elif 'PERFORMANCE' in anomaly %}
+                                <span class="anomaly-tag tag-PERFORMANCE_ANOMALY">PERFORMANCE</span>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td><div class="payload">{{ r.payload | string }}</div></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="footer">
+    Generisano od strane OpenAPI Fuzzer &nbsp;·&nbsp; {{ generated_at }}
+</div>
+
+</body>
+</html>
