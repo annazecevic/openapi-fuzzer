@@ -46,7 +46,7 @@ paths:
         "201":
           description: Knjiga kreirana
         "400":
-          description: Loš zahtjev
+          description: Loš zahtev
  
   /books/{bookId}:
     parameters:

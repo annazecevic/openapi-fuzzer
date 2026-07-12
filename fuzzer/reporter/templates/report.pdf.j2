@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    color: #1a1a1a;
+    margin: 20px;
+  }
+
+  h1 { font-size: 18px; color: #0f172a; margin-bottom: 4px; }
+  h2 { font-size: 12px; color: #475569; text-transform: uppercase;
+       margin-top: 20px; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1;
+       padding-bottom: 3px; }
+
+  .meta { font-size: 10px; color: #64748b; margin-bottom: 16px; }
+
+  /* Summary tabela */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  .summary-table td {
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    text-align: center;
+    width: 16%;
+  }
+  .summary-table .label {
+    font-size: 9px;
+    color: #64748b;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .summary-table .value {
+    font-size: 22px;
+    font-weight: bold;
+  }
+  .val-total   { color: #0f172a; }
+  .val-passed  { color: #16a34a; }
+  .val-failed  { color: #dc2626; }
+  .val-server  { color: #ea580c; }
+  .val-contract{ color: #ca8a04; }
+  .val-perf    { color: #7c3aed; }
+
+  /* Rezultati tabela */
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+  }
+  .results-table th {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 5px 6px;
+    text-align: left;
+    font-size: 8px;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+  .results-table td {
+    border: 1px solid #e2e8f0;
+    padding: 4px 6px;
+    vertical-align: top;
+  }
+  .results-table tr.passed-row td {
+    color: #94a3b8;
+  }
+  .results-table tr.anomaly-row td {
+    background: #fff7ed;
+  }
+
+  .method {
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 8px;
+  }
+  .GET    { background: #d1fae5; color: #065f46; }
+  .POST   { background: #dbeafe; color: #1e3a8a; }
+  .PUT    { background: #ffedd5; color: #7c2d12; }
+  .DELETE { background: #fee2e2; color: #7f1d1d; }
+
+  .status-ok   { color: #16a34a; font-weight: bold; }
+  .status-warn { color: #ca8a04; font-weight: bold; }
+  .status-err  { color: #dc2626; font-weight: bold; }
+
+  .tag {
+    font-size: 7px;
+    font-weight: bold;
+    padding: 1px 3px;
+    border-radius: 2px;
+    display: inline;
+  }
+  .tag-SF  { background: #fed7aa; color: #c2410c; }
+  .tag-CM  { background: #fef08a; color: #854d0e; }
+  .tag-PA  { background: #e9d5ff; color: #6b21a8; }
+
+  .coverage-box {
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 10px;
+  }
+
+  .footer {
+    margin-top: 16px;
+    font-size: 9px;
+    color: #94a3b8;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>OpenAPI Fuzzer — Izveštaj</h1>
+<div class="meta">
+  API: <strong>{{ title }}</strong> &nbsp;|&nbsp;
+  Verzija: <strong>{{ version }}</strong> &nbsp;|&nbsp;
+  Generisano: <strong>{{ generated_at }}</strong>
+</div>
+
+<h2>Pregled</h2>
+<table class="summary-table">
+  <tr>
+    <td><span class="label">Ukupno</span><span class="value val-total">{{ summary.total }}</span></td>
+    <td><span class="label">Prošlo</span><span class="value val-passed">{{ summary.passed }}</span></td>
+    <td><span class="label">Anomalija</span><span class="value val-failed">{{ summary.failed }}</span></td>
+    <td><span class="label">Server Failure</span><span class="value val-server">{{ summary.server_failures }}</span></td>
+    <td><span class="label">Contract Mismatch</span><span class="value val-contract">{{ summary.contract_mismatches }}</span></td>
+    <td><span class="label">Performance</span><span class="value val-perf">{{ summary.performance_anomalies }}</span></td>
+  </tr>
+</table>
+
+<div class="coverage-box">
+  <strong>API Coverage:</strong>
+  {{ summary.tested_endpoints }}/{{ summary.total_endpoints }} endpointa
+  ({{ summary.coverage_pct }}%)
+</div>
+
+<h2>Rezultati testova</h2>
+<table class="results-table">
+  <thead>
+    <tr>
+      <th>Metoda</th>
+      <th>Endpoint</th>
+      <th>Status</th>
+      <th>Vreme (ms)</th>
+      <th>Mutacija</th>
+      <th>Polje</th>
+      <th>Anomalije</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in results %}
+    <tr class="{{ 'anomaly-row' if not r.passed else 'passed-row' }}">
+      <td><span class="method {{ r.method }}">{{ r.method }}</span></td>
+      <td>{{ r.endpoint }}</td>
+      <td>
+        {% if r.status_code >= 500 or r.status_code == 0 %}
+          <span class="status-err">{{ r.status_code }}</span>
+        {% elif r.status_code >= 400 %}
+          <span class="status-warn">{{ r.status_code }}</span>
+        {% else %}
+          <span class="status-ok">{{ r.status_code }}</span>
+        {% endif %}
+      </td>
+      <td>{{ r.response_time_ms }}</td>
+      <td>{{ r.mutation_type }}</td>
+      <td>{{ r.mutated_field }}</td>
+      <td>
+        {% for anomaly in r.anomalies %}
+          {% if 'SERVER_FAILURE' in anomaly %}
+            <span class="tag tag-SF">SERVER FAIL</span>
+          {% elif 'CONTRACT_MISMATCH' in anomaly %}
+            <span class="tag tag-CM">CONTRACT</span>
+          {% elif 'PERFORMANCE' in anomaly %}
+            <span class="tag tag-PA">PERF</span>
+          {% endif %}
+        {% endfor %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="footer">
+  Generisano od strane OpenAPI Fuzzer &nbsp;|&nbsp; {{ generated_at }}
+</div>
+
+</body>
+</html>

@@ -1,0 +1,558 @@
+openapi: "3.0.3"
+info:
+  title: "Spotify Clone - Content Service"
+  version: "1.0.0"
+  description: >
+    Content Service za Spotify clone projekat (annazecevic/spotify).
+    Port 8081. Javni GET endpointi + admin POST/PUT endpointi.
+
+servers:
+  - url: "http://localhost:9081"
+
+paths:
+
+  /content/genres:
+    get:
+      operationId: listGenres
+      summary: Lista svih žanrova
+      responses:
+        "200":
+          description: Lista žanrova
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Genre"
+    post:
+      operationId: createGenre
+      summary: Kreiranje novog žanra (samo admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGenreRequest"
+      responses:
+        "201":
+          description: Žanr kreiran
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Genre"
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Nije prijavljen
+        "403":
+          description: Nije admin
+
+  /content/genres/{id}:
+    get:
+      operationId: getGenre
+      summary: Dohvatanje žanra po ID-u
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Žanr
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Genre"
+        "404":
+          description: Žanr nije pronađen
+
+  /content/artists:
+    get:
+      operationId: listArtists
+      summary: Lista svih izvođača
+      responses:
+        "200":
+          description: Lista izvođača
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Artist"
+    post:
+      operationId: createArtist
+      summary: Kreiranje izvođača (samo admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateArtistRequest"
+      responses:
+        "201":
+          description: Izvođač kreiran
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Nije prijavljen
+        "403":
+          description: Nije admin
+
+  /content/artists/search:
+    get:
+      operationId: searchArtists
+      summary: Pretraga izvođača
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Tekst za pretragu"
+        - name: genre
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Filtriranje po žanru"
+      responses:
+        "200":
+          description: Rezultati pretrage
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Artist"
+        "400":
+          description: Maliciozni upit detektovan
+
+  /content/artists/{id}:
+    get:
+      operationId: getArtist
+      summary: Dohvatanje izvođača po ID-u
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Izvođač
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Artist"
+        "404":
+          description: Izvođač nije pronađen
+    put:
+      operationId: updateArtist
+      summary: Ažuriranje izvođača (samo admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateArtistRequest"
+      responses:
+        "200":
+          description: Izvođač ažuriran
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Nije prijavljen
+        "403":
+          description: Nije admin
+        "404":
+          description: Izvođač nije pronađen
+
+  /content/artists/{id}/albums:
+    get:
+      operationId: getArtistAlbums
+      summary: Lista albuma izvođača
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista albuma
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Album"
+
+  /content/albums:
+    get:
+      operationId: listAlbums
+      summary: Lista svih albuma
+      responses:
+        "200":
+          description: Lista albuma
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Album"
+    post:
+      operationId: createAlbum
+      summary: Kreiranje albuma (samo admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlbumRequest"
+      responses:
+        "201":
+          description: Album kreiran
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Nije prijavljen
+        "403":
+          description: Nije admin
+
+  /content/albums/search:
+    get:
+      operationId: searchAlbums
+      summary: Pretraga albuma
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rezultati pretrage
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Album"
+        "400":
+          description: Maliciozni upit detektovan
+
+  /content/albums/{id}:
+    get:
+      operationId: getAlbum
+      summary: Dohvatanje albuma po ID-u
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Album
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Album"
+        "404":
+          description: Album nije pronađen
+
+  /content/albums/{id}/tracks:
+    get:
+      operationId: getAlbumTracks
+      summary: Lista pesama albuma
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista pesama
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+
+  /content/tracks:
+    get:
+      operationId: listTracks
+      summary: Lista svih pesama
+      responses:
+        "200":
+          description: Lista pesama
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+    post:
+      operationId: createTrack
+      summary: Kreiranje pesme (samo admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTrackRequest"
+      responses:
+        "201":
+          description: Pesma kreirana
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Nije prijavljen
+        "403":
+          description: Nije admin
+
+  /content/tracks/search:
+    get:
+      operationId: searchTracks
+      summary: Pretraga pesama
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rezultati pretrage
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+        "400":
+          description: Maliciozni upit detektovan
+
+  /content/tracks/{id}:
+    get:
+      operationId: getTrack
+      summary: Dohvatanje pesme po ID-u
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pesma
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+        "404":
+          description: Pesma nije pronađena
+
+  /content/tracks/{id}/hdfs-path:
+    put:
+      operationId: updateTrackHDFSPath
+      summary: Ažuriranje HDFS putanje pesme (samo admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hdfs_path
+              properties:
+                hdfs_path:
+                  type: string
+      responses:
+        "200":
+          description: HDFS putanja ažurirana
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Nije prijavljen
+        "403":
+          description: Nije admin
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      responses:
+        "200":
+          description: Servis je aktivan
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Genre:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        desc:
+          type: string
+
+    Artist:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        about:
+          type: string
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+
+    Album:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        released:
+          type: string
+        genre:
+          $ref: "#/components/schemas/Genre"
+        artist_ids:
+          type: array
+          items:
+            type: string
+
+    Track:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        duration:
+          type: integer
+        genre:
+          type: string
+        album_id:
+          type: string
+        artist_ids:
+          type: array
+          items:
+            type: string
+
+    CreateGenreRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Rock"
+        desc:
+          type: string
+          example: "Rock muzika"
+
+    CreateArtistRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "The Beatles"
+        about:
+          type: string
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+
+    UpdateArtistRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        about:
+          type: string
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+
+    CreateAlbumRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: "Abbey Road"
+        released:
+          type: string
+          example: "1969-09-26"
+        genre:
+          $ref: "#/components/schemas/Genre"
+        artist_ids:
+          type: array
+          items:
+            type: string
+
+    CreateTrackRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: "Come Together"
+        duration:
+          type: integer
+          example: 259
+          description: "Trajanje u sekundama (1-7200)"
+        genre:
+          type: string
+        album_id:
+          type: string
+        artist_ids:
+          type: array
+          items:
+            type: string

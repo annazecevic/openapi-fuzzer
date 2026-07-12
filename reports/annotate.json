@@ -1,0 +1,777 @@
+{
+  "_instructions": "Anotiran ground-truth fajl za F1 Score evaluaciju.",
+  "api": "WebGoat IDOR API",
+  "total_tests": 71,
+  "anomaly_count": 64,
+  "false_negatives": 1,
+  "results": [
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 67.17,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 8.35,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 6.92,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 7.66,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 6.86,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 6.24,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 6.62,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 7.42,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 6.53,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "GET",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 200,
+      "response_time_ms": 5.65,
+      "anomalies": [
+        "CONTRACT_MISMATCH: Server vratio 200 na 'type_mutation' mutaciju polja 'userId' — nedostaje validacija ulaza"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 14.16,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 5.15,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 5.2,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.51,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.57,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.17,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 5.19,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.67,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.6,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.47,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.15,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.13,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.72,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 3.67,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.12,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.37,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.48,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.36,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 5.1,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.98,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 5.02,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.49,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.54,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.17,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 3.92,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.31,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.26,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.33,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 5.4,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.53,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 3.91,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 5.17,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.09,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.4,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 3.76,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.66,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.49,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 3.9,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "size",
+      "mutation_type": "boundary",
+      "status_code": 500,
+      "response_time_ms": 4.98,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "name",
+      "mutation_type": "structure",
+      "status_code": 500,
+      "response_time_ms": 4.07,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "color",
+      "mutation_type": "structure",
+      "status_code": 500,
+      "response_time_ms": 3.88,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "role",
+      "mutation_type": "structure",
+      "status_code": 500,
+      "response_time_ms": 3.58,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "__extra_field__",
+      "mutation_type": "structure",
+      "status_code": 500,
+      "response_time_ms": 4.69,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "__deep_nest__",
+      "mutation_type": "structure",
+      "status_code": 500,
+      "response_time_ms": 3.98,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.3,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.17,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 3.99,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 3.32,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.02,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 3.35,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 4.6,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 3.07,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 3.68,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    },
+    {
+      "endpoint": "/WebGoat/IDOR/profile/{userId}",
+      "method": "PUT",
+      "mutated_field": "userId",
+      "mutation_type": "type_mutation",
+      "status_code": 500,
+      "response_time_ms": 5.34,
+      "anomalies": [
+        "SERVER_FAILURE: Status 500 — server crash na mutiranom ulazu"
+      ],
+      "true_positive": true
+    }
+  ]
+}

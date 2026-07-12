@@ -1,0 +1,14 @@
+[project]
+name = "openapi-fuzzer"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.0",
+    "PyYAML>=6.0",
+    "Jinja2>=3.1",
+    "xhtml2pdf>=0.2",
+]
+
+[project.scripts]
+fuzzer = "fuzzer.__main__:main"

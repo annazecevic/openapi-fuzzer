@@ -1,0 +1,425 @@
+openapi: "3.0.3"
+info:
+  title: "Spotify Clone - User Service"
+  version: "1.0.0"
+  description: >
+    User Service za Spotify clone projekat (annazecevic/spotify).
+    Port 8080. JWT autentifikacija sa OTP verifikacijom.
+
+servers:
+  - url: "http://localhost:9080"
+
+paths:
+
+  /api/v1/users/register:
+    post:
+      operationId: registerUser
+      summary: Registracija novog korisnika
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Korisnik kreiran
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Nevalidni podaci
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Greška servera
+
+  /api/v1/users/login:
+    post:
+      operationId: loginUser
+      summary: Prijava korisnika (šalje OTP na email)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OTP poslat na email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  email:
+                    type: string
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Pogrešne kredencijale
+
+  /api/v1/users/verify-otp:
+    post:
+      operationId: verifyOTP
+      summary: Verifikacija OTP-a i dobijanje JWT tokena
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOTPRequest"
+      responses:
+        "200":
+          description: JWT token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Pogrešan OTP
+
+  /api/v1/users/confirm:
+    get:
+      operationId: confirmEmailGet
+      summary: Potvrda email adrese (GET sa query parametrom)
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email potvrđen
+        "400":
+          description: Nevažeći token
+    post:
+      operationId: confirmEmailPost
+      summary: Potvrda email adrese (POST sa telom)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Email potvrđen
+        "400":
+          description: Nevažeći token
+
+  /api/v1/users/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      summary: Zahtev za resetovanje lozinke
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Link za reset poslat (uvek vraća 200 radi sigurnosti)
+        "400":
+          description: Nevalidni podaci
+
+  /api/v1/users/password-reset/reset:
+    post:
+      operationId: resetPassword
+      summary: Resetovanje lozinke sa tokenom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Lozinka resetovana
+        "400":
+          description: Nevažeći token ili lozinka
+
+  /api/v1/users/magic-link/request:
+    post:
+      operationId: requestMagicLink
+      summary: Zahtev za magic link (login bez lozinke)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Magic link poslat (uvek vraća 200 radi sigurnosti)
+        "400":
+          description: Nevalidni podaci
+
+  /api/v1/users/magic-link/verify:
+    get:
+      operationId: verifyMagicLinkGet
+      summary: Verifikacija magic linka (GET)
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: JWT token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Nevažeći ili istekli token
+    post:
+      operationId: verifyMagicLinkPost
+      summary: Verifikacija magic linka (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: JWT token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Nevažeći ili istekli token
+
+  /api/v1/users/me:
+    get:
+      operationId: getMyProfile
+      summary: Dohvatanje profila prijavljenog korisnika
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Podaci o korisniku
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          description: Nije prijavljen
+    put:
+      operationId: updateMyProfile
+      summary: Ažuriranje profila prijavljenog korisnika
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Profil ažuriran
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Nevalidni podaci
+        "401":
+          description: Nije prijavljen
+
+  /api/v1/users/change-password:
+    post:
+      operationId: changePassword
+      summary: Promena lozinke (zahteva staru lozinku)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Lozinka promenjena
+        "400":
+          description: Pogrešna stara lozinka ili nevalidna nova
+        "401":
+          description: Nije prijavljen
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      responses:
+        "200":
+          description: Servis je aktivan
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - last_name
+        - username
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          example: "Ana"
+        last_name:
+          type: string
+          example: "Zecevic"
+        username:
+          type: string
+          example: "annazecevic"
+        email:
+          type: string
+          format: email
+          example: "ana@example.com"
+        password:
+          type: string
+          example: "SecurePass123!"
+
+    LoginRequest:
+      type: object
+      required:
+        - identifier
+        - password
+      properties:
+        identifier:
+          type: string
+          description: "Email ili username"
+          example: "ana@example.com"
+        password:
+          type: string
+          example: "SecurePass123!"
+
+    VerifyOTPRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+          example: "ana@example.com"
+        otp:
+          type: string
+          example: "123456"
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - new_password
+      properties:
+        token:
+          type: string
+        new_password:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - current_password
+        - new_password
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        last_name:
+          type: string
+        username:
+          type: string
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        last_name:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        confirmed:
+          type: boolean
+        created_at:
+          type: integer
+        password_expires_at:
+          type: integer
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserResponse"
+        password_expires_soon:
+          type: boolean
+        password_expires_in_days:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string

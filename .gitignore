@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Generisani izvještaji (lokalni, ne commituj)
+report.html
+report.json
+report.pdf
+
+# Env fajlovi sa tokenima
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp

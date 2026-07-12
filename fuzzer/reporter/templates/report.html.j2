@@ -141,6 +141,21 @@ Output
             white-space: nowrap;
         }
 
+        .response-body {
+            font-family: monospace;
+            font-size: 0.72rem;
+            color: #475569;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .response-size {
+            font-size: 0.72rem;
+            color: #475569;
+        }
+
         .passed-row td { opacity: 0.45; }
 
         .footer {
@@ -208,6 +223,7 @@ Output
                     <th>Polje</th>
                     <th>Anomalije</th>
                     <th>Payload</th>
+                    <th>Response</th>
                 </tr>
             </thead>
             <tbody>
@@ -239,6 +255,12 @@ Output
                         {% endfor %}
                     </td>
                     <td><div class="payload">{{ r.payload | string }}</div></td>
+                    <td>
+                        <div class="response-size">{{ r.response_size_bytes }} B</div>
+                        {% if r.response_body %}
+                        <div class="response-body" title="{{ r.response_body }}">{{ r.response_body[:120] }}</div>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>

@@ -1,0 +1,72 @@
+openapi: "3.0.3"
+
+info:
+  title: WebGoat IDOR API
+  version: "1.0.0"
+  description: OpenAPI spec za WebGoat IDOR endpointe za fuzz testiranje
+
+paths:
+
+  /WebGoat/IDOR/profile:
+    get:
+      operationId: getProfile
+      summary: Dohvati profil trenutnog korisnika
+      responses:
+        "200":
+          description: Profil korisnika
+        "401":
+          description: Neautorizovan pristup
+
+  /WebGoat/IDOR/profile/{userId}:
+    get:
+      operationId: getProfileById
+      summary: Dohvati profil po userId — IDOR ranjivost
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Profil pronađen
+        "401":
+          description: Neautorizovan
+        "403":
+          description: Zabranjen pristup
+
+    put:
+      operationId: updateProfileById
+      summary: Ažuriraj tuđi profil — IDOR + Type Confusion
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - color
+                - role
+              properties:
+                name:
+                  type: string
+                color:
+                  type: string
+                role:
+                  type: integer
+                size:
+                  type: string
+      responses:
+        "200":
+          description: Profil ažuriran
+        "401":
+          description: Neautorizovan
+        "403":
+          description: Zabranjen pristup
