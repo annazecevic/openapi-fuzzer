@@ -47,7 +47,6 @@ def prepare_annotation_file(input_path: str, output_path: str) -> int:
     return len(anomalies_only)
 
 # CLI deo — priprema annotate.json iz report.json rezultata.
-# Kod nas true_positive polja popunjava automatski skript, ne ručno.
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Pripremi fajl za rucnu anotaciju (F1 Score evaluacija)."
