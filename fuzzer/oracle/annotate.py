@@ -3,10 +3,14 @@ import argparse
 import sys
 from pathlib import Path
 
-
+# Učitava izveštaj sa rezultatima testiranja, izdvaja samo rezultate sa
+# pronađenim anomalijama, i priprema ih u novi JSON fajl za ručnu anotaciju
+# (čovek treba da potvrdi da li je svaki nalaz stvaran ili lažan)
 def prepare_annotation_file(input_path: str, output_path: str) -> int:
     data = json.loads(Path(input_path).read_text(encoding="utf-8"))
 
+    # Filtrira samo rezultate koji imaju bar jednu anomaliju i dodaje
+    # prazno polje "true_positive" koje čovek ručno popunjava
     anomalies_only = [
         {
             "endpoint": r["endpoint"],
@@ -16,12 +20,13 @@ def prepare_annotation_file(input_path: str, output_path: str) -> int:
             "status_code": r["status_code"],
             "response_time_ms": r["response_time_ms"],
             "anomalies": r["anomalies"],
-            "true_positive": None,  # null = nije anotiran | true = TP | false = FP
+            "true_positive": None,  
         }
         for r in data.get("results", [])
         if r.get("anomalies")
     ]
 
+    # Pravi finalni objekat sa uputstvima, statistikom i mestom za false_negatives
     output = {
         "_instructions": (
             "Za svaki rezultat postavi true_positive: true (stvarni propust) "
@@ -41,7 +46,8 @@ def prepare_annotation_file(input_path: str, output_path: str) -> int:
 
     return len(anomalies_only)
 
-
+# CLI deo — priprema annotate.json iz report.json rezultata.
+# Kod nas true_positive polja popunjava automatski skript, ne ručno.
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Pripremi fajl za rucnu anotaciju (F1 Score evaluacija)."

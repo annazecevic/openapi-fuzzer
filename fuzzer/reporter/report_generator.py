@@ -1,6 +1,4 @@
 """
-fuzzer/reporter/report_generator.py
-
 Generiše HTML, PDF i JSON izveštaj iz liste TestResult objekata.
 """
 
@@ -15,7 +13,7 @@ from fuzzer.models import TestResult
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
-
+# Popunjava HTML šablon (Jinja2) podacima o testiranju i vraća gotov HTML tekst
 def _render_html(
     results: list[TestResult],
     summary: dict,
@@ -50,7 +48,8 @@ def generate_html(
     print(f"HTML izveštaj snimljen: {output.resolve()}")
     return str(output.resolve())
 
-
+# Popunjava POSEBAN, PDF-prilagođen šablon — xhtml2pdf ne podržava sav
+# moderan CSS/HTML, pa PDF šablon mora biti jednostavniji od HTML šablona
 def _render_pdf_html(
     results: list[TestResult],
     summary: dict,
@@ -75,10 +74,9 @@ def generate_pdf(
     api_version: str = "unknown",
     output_path: str = "report.pdf",
 ) -> str:
-    """
-    Generiše PDF izveštaj iz namenskog PDF predloška.
-    Vraća putanju do snimljenog fajla.
-    """
+    # xhtml2pdf je opciona zavisnost — uvozi se ovde, ne na vrhu fajla,
+    # da ne bude obavezna za sve koji ne koriste PDF izveštaje
+
     try:
         from xhtml2pdf import pisa
     except ImportError:
@@ -109,14 +107,17 @@ def generate_json(
     Generiše JSON log i snima ga na disk.
     Vraća putanju do snimljenog fajla.
     """
+    # Ovo je tačno report.json fajl koji se dalje koristi za pripremu
+    # anotacije i računanje F1 Score metrike
     log = {
         "api": api_title,
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": datetime.now().isoformat(),  # mašinski čitljiv format (za skripte)
         "summary": summary,
-        "results": [r.model_dump() for r in results],
+        "results": [r.model_dump() for r in results], # Pydantic model -> običan rečnik
     }
 
     output = Path(output_path)
+    # default=str — ako naiđe na tip koji ne zna da serijalizuje, pretvori ga u string
     output.write_text(json.dumps(log, indent=2, default=str), encoding="utf-8")
     print(f"JSON log snimljen: {output.resolve()}")
     return str(output.resolve())

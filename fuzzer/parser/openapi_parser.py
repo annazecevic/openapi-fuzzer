@@ -11,12 +11,12 @@ import yaml
 from fuzzer.models import EndpointModel, ParameterModel, ParsedSpec
 from fuzzer.parser.validator import OpenAPIValidationError, validate_spec
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__) # logger za praćenje rada parsera
 
-_SUPPORTED_METHODS = frozenset({"get", "post", "put", "delete"})
-_NON_OPERATION_KEYS = frozenset({"summary", "description", "servers", "parameters", "$ref"})
+_SUPPORTED_METHODS = frozenset({"get", "post", "put", "delete"}) # HTTP metode koje fuzzer podržava
+_NON_OPERATION_KEYS = frozenset({"summary", "description", "servers", "parameters", "$ref"}) # ključevi koji nisu HTTP operacije, treba ih preskočiti
 
-
+#ucitavnje,provera
 def parse_file(path: str | Path) -> ParsedSpec:
     path = Path(path)
 
@@ -34,12 +34,12 @@ def parse_file(path: str | Path) -> ParsedSpec:
 
     return parse_string(content)
 
-
+#prima i prosl kroz 2 faze
 def parse_string(content: str) -> ParsedSpec:
     raw = _load_raw(content)
     return _parse_raw(raw)
 
-
+#python recnik
 def _load_raw(content: str) -> dict[str, Any]:
     stripped = content.lstrip()
 
@@ -57,9 +57,9 @@ def _load_raw(content: str) -> dict[str, Any]:
     if result is None:
         raise OpenAPIValidationError("Spec fajl je prazan ili sadrži samo komentare.")
 
-    return result
+    return result #na osnovu toga bira biblioteku za parsiranje
 
-
+#vraca finalni objekat
 def _parse_raw(raw: dict[str, Any]) -> ParsedSpec:
     validate_spec(raw)
 
@@ -76,16 +76,21 @@ def _parse_raw(raw: dict[str, Any]) -> ParsedSpec:
 
         path_level_params = path_item.get("parameters", [])
 
+        #kroz sve kljuceve(parametri, get,post)
         for method_str, operation in path_item.items():
-            if method_str in _NON_OPERATION_KEYS:
+            #nije http metoda 
+            if method_str in _NON_OPERATION_KEYS :  #summary, description, servers, parameters, $ref
                 continue
+            #jeste hhtp metoda
             if method_str not in _SUPPORTED_METHODS:
                 logger.debug("Preskačem nepodržanu metodu '%s' na %s", method_str.upper(), path_str)
                 continue
+            #da li je sadrzaj operacije stv recnik
             if not isinstance(operation, dict):
                 skipped.append(f"{method_str.upper()} {path_str}")
                 continue
-
+            #izvlace se pod o endpointu 
+            #zaštita od pada celog programa zbog jednog lošeg endpoint-a
             try:
                 ep = _extract_endpoint(path_str, method_str, operation, path_level_params)
                 endpoints.append(ep)
@@ -99,17 +104,19 @@ def _parse_raw(raw: dict[str, Any]) -> ParsedSpec:
     return ParsedSpec(
         title=str(info.get("title", "Unknown API")),
         version=str(info.get("version", "unknown")),
+        #verziju OpenAPI standarda koji je koriscen za pisanje spec-a 
         openapi_version=str(resolved.get("openapi", "")),
         endpoints=endpoints,
     )
 
-
+#izvlaci detalje za jedan endopoint
 def _extract_endpoint(
     path: str,
     method: str,
     operation: dict[str, Any],
     path_level_params: list[dict],
 ) -> EndpointModel:
+    #spaja param (na niovu cele putanje i specif metode)
     merged_params = _merge_parameters(path_level_params, operation.get("parameters", []))
 
     query_params: list[ParameterModel] = []
@@ -117,11 +124,13 @@ def _extract_endpoint(
     header_params: list[ParameterModel] = []
 
     for param_raw in merged_params:
+        #nije recnik, lose nap npr str umest pravog obj
         if not isinstance(param_raw, dict):
             continue
         param = _parse_parameter(param_raw)
-        if param is None:
+        if param is None: #ako nema obavez polja
             continue
+        #ide u odg listu
         if param.location == "query":
             query_params.append(param)
         elif param.location == "path":
@@ -129,26 +138,27 @@ def _extract_endpoint(
         elif param.location == "header":
             header_params.append(param)
 
-    request_schema: dict[str, Any] = {}
-    raw_request_schema: dict[str, Any] = {}
-    required_fields: list[str] = []
+    #tri prazne prom
+    request_schema: dict[str, Any] = {} #fuzzer lako vidi koja polja postoje i kog su tipa
+    raw_request_schema: dict[str, Any] = {} #Ovo će čuvati originalnu, nepromenjenu JSON šemu
+    required_fields: list[str] = [] #Ovo će čuvati listu naziva obaveznih polja
 
     request_body = operation.get("requestBody")
-    if isinstance(request_body, dict):
-        json_content = request_body.get("content", {}).get("application/json", {})
+    if isinstance(request_body, dict): #Provera da li requestBody postoji i da je rečnik
+        json_content = request_body.get("content", {}).get("application/json", {}) #izvlači content sekciju, od tih formata izvlači samo JSON deo
         if json_content:
-            schema = json_content.get("schema", {})
-            raw_request_schema = schema
-            required_fields = schema.get("required", [])
-            request_schema = _flatten_schema(schema)
+            schema = json_content.get("schema", {}) #stvarna sema
+            raw_request_schema = schema #originalna sema
+            required_fields = schema.get("required", []) #obavezna polja
+            request_schema = _flatten_schema(schema) #pojednostavljena sema
 
-    response_schemas: dict[int, dict[str, Any]] = {}
-    for status_str, resp_obj in operation.get("responses", {}).items():
+    response_schemas: dict[int, dict[str, Any]] = {} #prazan recnik
+    for status_str, resp_obj in operation.get("responses", {}).items(): #Prolazi se kroz sve odgovore definisane u spec-u.
         try:
-            code = int(status_str)
+            code = int(status_str) #statusni kod pretvara iz str u broj 
         except (ValueError, TypeError):
             continue
-        if isinstance(resp_obj, dict):
+        if isinstance(resp_obj, dict): #da li je sadržaj odgovora stvarno rečnik 
             json_resp = resp_obj.get("content", {}).get("application/json", {})
             if json_resp:
                 response_schemas[code] = json_resp.get("schema", {})
@@ -170,14 +180,15 @@ def _extract_endpoint(
 def _parse_parameter(raw: dict[str, Any]) -> ParameterModel | None:
     name = raw.get("name")
     location = raw.get("in")
-
+# Bez imena ili lokacije parametar nema smisla — odbacuje se
     if not name or not location:
         return None
+     # Lokacija mora biti jedna od poznatih OpenAPI vrednosti
     if location not in ("query", "path", "header", "cookie"):
         return None
 
-    schema = raw.get("schema", {})
-    schema_type = _resolve_type(schema)
+    schema = raw.get("schema", {}) #opisuje tip podatka
+    schema_type = _resolve_type(schema) #prost tip tog parametra
 
     return ParameterModel(
         name=str(name),
@@ -186,12 +197,12 @@ def _parse_parameter(raw: dict[str, Any]) -> ParameterModel | None:
         schema_type=schema_type,
     )
 
-
+#json semu pretvara u prostu mapu
 def _flatten_schema(schema: dict[str, Any]) -> dict[str, Any]:
     if not schema or not isinstance(schema, dict):
         return {}
 
-    for combiner in ("allOf", "anyOf", "oneOf"):
+    for combiner in ("allOf", "anyOf", "oneOf"): #ako imamo dva elementa i treba ih spojiti
         if combiner in schema:
             merged: dict[str, Any] = {}
             for sub in schema[combiner]:
@@ -209,11 +220,11 @@ def _flatten_schema(schema: dict[str, Any]) -> dict[str, Any]:
         if isinstance(field_schema, dict)
     }
 
-
+#za jednu semu odredjuje tip
 def _resolve_type(schema: dict[str, Any]) -> str:
-    if not schema or not isinstance(schema, dict):
+    if not schema or not isinstance(schema, dict): #ako ne postoji i nije recnik
         return "unknown"
-
+    #vr kljuca, npr string
     t = schema.get("type")
 
     if t == "array":
@@ -227,32 +238,37 @@ def _resolve_type(schema: dict[str, Any]) -> str:
         if combiner in schema:
             subs = schema[combiner]
             if isinstance(subs, list) and subs:
-                return _resolve_type(subs[0])
+                return _resolve_type(subs[0]) #uzima se samo prvi tip
 
     return "unknown"
 
 
 def _merge_parameters(path_params: list[dict], op_params: list[dict]) -> list[dict]:
-    # Operation-level parametri imaju prioritet nad path-level pri konfliktu
-    op_index = {
-        (p["name"], p["in"]): p
-        for p in op_params
-        if isinstance(p, dict) and "name" in p and "in" in p
+   #brza provera da li param vec postoji
+    op_index = { 
+        (p["name"], p["in"]): p  # ključ je par (ime, lokacija), vrednost je ceo parametar
+        for p in op_params  # prolazi kroz svaki parametar operacije
+        if isinstance(p, dict) and "name" in p and "in" in p  # samo ako je ispravno definisan
     }
+    # Kopira operation-level parametre kao osnovu rezultata (oni imaju prioritet)
     result = list(op_params)
+    # Prolazi kroz path-level parametre da doda one koji NISU već pokriveni operation-level parametrima
     for p in path_params:
-        if isinstance(p, dict) and "name" in p and "in" in p:
+        if isinstance(p, dict) and "name" in p and "in" in p: # proverava da li već postoji među operation-level
             if (p["name"], p["in"]) not in op_index:
                 result.append(p)
     return result
 
-
+#zamenjuje svaku $ref referencu njenim stvarnim sadržajem
 def _resolve_refs(node: Any, root: dict[str, Any], _depth: int = 0) -> Any:
-    # Max dubina 50 — zaštita od kružnih $ref referenci u spec-u
+   #beskonacan krug
     if _depth > 50:
         logger.warning("Dostignut max depth za $ref razrešavanje — moguća kružna referenca")
         return node
-
+    
+# Prepoznaje $ref referencu, pronalazi njen stvarni sadržaj u spec fajlu
+# i rekurzivno ga razrešava dalje; ako referenca ne može da se razreši 
+# (eksterna je ili nije pronađena), ostavlja se nepromenjena.
     if isinstance(node, dict):
         if "$ref" in node:
             ref = node["$ref"]
@@ -271,7 +287,9 @@ def _resolve_refs(node: Any, root: dict[str, Any], _depth: int = 0) -> Any:
 
     return node
 
-
+# Prati $ref putanju korak po korak kroz spec dokument (kao GPS navigacija),
+# ulazeći dublje u rečnike po ključu ili u liste po indeksu, dok ne pronađe 
+# tačan sadržaj na koji referenca pokazuje, ili vrati None ako putanja ne postoji.
 def _resolve_internal_ref(ref: str, root: dict[str, Any]) -> Any | None:
     if not ref.startswith("#/"):
         return root if ref == "#" else None

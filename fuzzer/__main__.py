@@ -1,3 +1,10 @@
+# Glavna ulazna tačka fuzzer alata — čita argumente iz komandne linije i
+# redom pokreće ceo tok kroz 5 koraka: parsiranje spec-a, generisanje test
+# scenarija, izvršavanje HTTP testova, analizu rezultata (detekcija anomalija),
+# i generisanje HTML/JSON/PDF izveštaja. Vraća statusni kod (0/1/2) zavisno
+# od toga da li je sve prošlo uspešno, pronađene su anomalije, ili je pukla
+# greška pri pokretanju — radi lakše integracije u automatizovane procese.
+
 import argparse
 import sys
 from pathlib import Path

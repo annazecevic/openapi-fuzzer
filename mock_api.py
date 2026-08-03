@@ -14,10 +14,7 @@ from fastapi.responses import JSONResponse
 app = FastAPI(title="Mock Bookstore API")
  
  
-# ---------------------------------------------------------------------------
-# /books
-# ---------------------------------------------------------------------------
- 
+
 @app.get("/books")
 def list_books(limit: int = 10, genre: str = None):
     return [
@@ -70,9 +67,7 @@ def delete_book(bookId: str):
     from starlette.responses import Response
     return Response(status_code=204)
  
-# ---------------------------------------------------------------------------
-# /users
-# ---------------------------------------------------------------------------
+
  
 @app.post("/users")
 async def register_user(request: Request):

@@ -1,3 +1,5 @@
+#rečnik loših vrednosti po tipu (string, integer, boolean...)
+
 _LONG_STRING = "A" * 10_000
 _SQL_INJECTION = "' OR '1'='1"
 _NULL_BYTE = "test\x00injection"
@@ -10,12 +12,12 @@ CATALOG: dict[str, list] = {
         " ",
         _LONG_STRING,
         _SQL_INJECTION,
-        _NULL_BYTE,        # null bajt može prekinuti C-bazirane parsere iza API-ja
+        _NULL_BYTE,        
         123,
         None,
         [],
         True,
-        '{"a":{"b":{"c":{"d":{"e":"deep"}}}}}',
+        '{"a":{"b":{"c":{"d":{"e":"deep"}}}}}',  # JSON kao string — testira da li se pogrešno parsira
         "A" * 50_000,
     ],
 
@@ -50,9 +52,9 @@ CATALOG: dict[str, list] = {
         0.0,
         -0.001,
         1e308,
-        -1e308,
-        float("inf"),      # malo API-ja zna da serialiuze infinity u JSON
-        float("nan"),
+        -1e308,           # ekstremno veliki/mali brojevi
+        float("inf"),     # beskonačnost  
+        float("nan"),     # "Not a Number"
         "abc",
         None,
     ],

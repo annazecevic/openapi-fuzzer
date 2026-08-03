@@ -1,17 +1,19 @@
+import jsonschema
+
 from fuzzer.models import TestResult
 
-# Odgovori sporiji od ovog praga ukazuju na potencijalni DoS vektor
-PERFORMANCE_THRESHOLD_MS = 2000.0
 
+PERFORMANCE_THRESHOLD_MS = 2000.0 # prag iznad kog se vreme odgovora smatra problemom
 
-def detect(result: TestResult, mutation_type: str = "") -> list[str]:
+# Za jedan rezultat, proverava sve tri vrste anomalija i vraća listu problema
+def detect(result: TestResult) -> list[str]:
     anomalies = []
     anomalies += _check_server_failure(result)
-    anomalies += _check_contract_mismatch(result, mutation_type)
+    anomalies += _check_contract_mismatch(result)
     anomalies += _check_performance(result)
     return anomalies
 
-
+# Anomalija ako server nije odgovorio (status 0) ili je pukao (5xx)
 def _check_server_failure(result: TestResult) -> list[str]:
     if result.status_code == 0:
         return ["SERVER_FAILURE: Timeout ili connection error — server nije odgovorio"]
@@ -19,21 +21,26 @@ def _check_server_failure(result: TestResult) -> list[str]:
         return [f"SERVER_FAILURE: Status {result.status_code} — server crash na mutiranom ulazu"]
     return []
 
-
-def _check_contract_mismatch(result: TestResult, mutation_type: str) -> list[str]:
-    if result.status_code is None:
+# Anomalija ako server vratio 2xx na payload koji krši OpenAPI šemu — proverava se
+# pravom JSON Schema validacijom, ne heuristikom po tipu mutacije
+def _check_contract_mismatch(result: TestResult) -> list[str]:
+    if not (200 <= result.status_code < 300):
         return []
-    # 2xx na namerno pogrešan ulaz znači da server nema validaciju
-    if 200 <= result.status_code < 300:
-        if mutation_type in ("type_mutation", "structure", "boundary"):
-            return [
-                f"CONTRACT_MISMATCH: Server vratio {result.status_code} "
-                f"na '{mutation_type}' mutaciju polja '{result.mutated_field}' — "
-                f"nedostaje validacija ulaza"
-            ]
+
+    if not result.request_schema:
+        return []
+
+    try:
+        jsonschema.validate(instance=result.payload, schema=result.request_schema)
+    except jsonschema.ValidationError as e:
+        return [
+            f"CONTRACT_MISMATCH: Server vratio {result.status_code} na payload koji "
+            f"krši šemu ({e.message}) — polje '{result.mutated_field}'"
+        ]
+
     return []
 
-
+# Anomalija ako je vreme odgovora prešlo prag od 2 sekunde
 def _check_performance(result: TestResult) -> list[str]:
     if result.response_time_ms > PERFORMANCE_THRESHOLD_MS:
         return [
@@ -42,10 +49,11 @@ def _check_performance(result: TestResult) -> list[str]:
         ]
     return []
 
-
+# Primenjuje detekciju na celu listu rezultata, dodaje anomalije bez dupliranja,
+# ispravlja passed status ako je pronađen bilo kakav problem
 def analyze_results(results: list[TestResult]) -> list[TestResult]:
     for result in results:
-        detected = detect(result, mutation_type=result.mutation_type)
+        detected = detect(result)
         for anomaly in detected:
             if anomaly not in result.anomalies:
                 result.anomalies.append(anomaly)
@@ -53,7 +61,7 @@ def analyze_results(results: list[TestResult]) -> list[TestResult]:
             result.passed = False
     return results
 
-
+# Pravi statistički pregled — ukupno/prošlo/palo, i broj svake vrste anomalije
 def summary(results: list[TestResult]) -> dict:
     total = len(results)
     failed = [r for r in results if not r.passed]
