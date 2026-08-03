@@ -45,3 +45,32 @@ def test_empty_request_schema_no_mismatch():
     result = _result(200, {"age": -5}, {})
     anomalies = detect(result)
     assert not any("CONTRACT_MISMATCH" in a for a in anomalies)
+
+
+def _error_result(error_category: str | None) -> TestResult:
+    return TestResult(
+        endpoint="/users",
+        method="POST",
+        status_code=0,
+        response_time_ms=10.0,
+        mutated_field="age",
+        error_category=error_category,
+    )
+
+
+def test_timeout_gives_server_failure():
+    result = _error_result("TIMEOUT")
+    anomalies = detect(result)
+    assert any("SERVER_FAILURE" in a for a in anomalies)
+
+
+def test_connect_error_gives_server_failure():
+    result = _error_result("CONNECT_ERROR")
+    anomalies = detect(result)
+    assert any("SERVER_FAILURE" in a for a in anomalies)
+
+
+def test_client_error_no_server_failure():
+    result = _error_result("CLIENT_ERROR")
+    anomalies = detect(result)
+    assert not any("SERVER_FAILURE" in a for a in anomalies)

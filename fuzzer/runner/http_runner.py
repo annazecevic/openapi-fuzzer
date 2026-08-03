@@ -56,6 +56,7 @@ async def _run_one(
     response_body: str | None = None
     response_size_bytes = 0
     error_message = None
+    error_category: str | None = None
 
 # Semafor ograničava koliko se zahteva izvršava istovremeno
     async with semaphore:
@@ -87,16 +88,17 @@ async def _run_one(
             # Server nije odgovorio u zadatom roku
             response_time_ms = timeout * 1000
             status_code = 0
-            error_message = "TIMEOUT"
+            error_category = "TIMEOUT"
 
         except httpx.ConnectError:
             # Konekcija sa serverom nije uspela da se uspostavi
             status_code = 0
-            error_message = "CONNECTION_ERROR"
+            error_category = "CONNECT_ERROR"
 
         except Exception as exc:
              # Bilo koja druga neočekivana greška (npr. nepodržana metoda)
             status_code = 0
+            error_category = "CLIENT_ERROR"
             error_message = str(exc)
 
         # Opciono usporavanje između zahteva, da se server ne preplavi  
@@ -114,9 +116,11 @@ async def _run_one(
         response_size_bytes=response_size_bytes,
         mutation_type=scenario.mutation_type,
         mutated_field=scenario.mutated_field,
-        anomalies=[error_message] if error_message else [],
+        anomalies=[],
         passed=status_code < 500,
         request_schema=scenario.request_schema,
+        error_category=error_category,
+        error_message=error_message,
     )
 
 # Paralelno pokreće sve test scenarije (semafor ograničava broj istovremenih

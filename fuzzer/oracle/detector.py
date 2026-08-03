@@ -13,12 +13,15 @@ def detect(result: TestResult) -> list[str]:
     anomalies += _check_performance(result)
     return anomalies
 
-# Anomalija ako server nije odgovorio (status 0) ili je pukao (5xx)
+# Anomalija ako server nije odgovorio (timeout/konekcija) ili je pukao (5xx) —
+# CLIENT_ERROR se ne broji, to je greška na strani fuzzera, ne servera
 def _check_server_failure(result: TestResult) -> list[str]:
-    if result.status_code == 0:
-        return ["SERVER_FAILURE: Timeout ili connection error — server nije odgovorio"]
     if result.status_code >= 500:
         return [f"SERVER_FAILURE: Status {result.status_code} — server crash na mutiranom ulazu"]
+    if result.error_category == "TIMEOUT":
+        return ["SERVER_FAILURE: Timeout — server nije odgovorio na vreme"]
+    if result.error_category == "CONNECT_ERROR":
+        return ["SERVER_FAILURE: Konekcija odbijena — server verovatno pao"]
     return []
 
 # Anomalija ako server vratio 2xx na payload koji krši OpenAPI šemu — proverava se
