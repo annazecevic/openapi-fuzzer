@@ -66,11 +66,11 @@ async def _run_one(
             if scenario.method == "GET":
                 response = await client.get(url, headers=headers, params=scenario.query_params)
             elif scenario.method == "POST":
-                response = await client.post(url, headers=headers, json=scenario.payload)
+                response = await client.post(url, headers=headers, params=scenario.query_params, json=scenario.payload)
             elif scenario.method == "PUT":
-                response = await client.put(url, headers=headers, json=scenario.payload)
+                response = await client.put(url, headers=headers, params=scenario.query_params, json=scenario.payload)
             elif scenario.method == "DELETE":
-                response = await client.delete(url, headers=headers)
+                response = await client.delete(url, headers=headers, params=scenario.query_params)
             else:
                 raise ValueError(f"Nepodržana metoda: {scenario.method}")
             

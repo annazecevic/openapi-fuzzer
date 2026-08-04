@@ -136,10 +136,11 @@ def _generate_structure_mutations(endpoint: EndpointModel) -> list[TestScenario]
     return scenarios
 
 # Za svaki path parametar (deo URL putanje), isprobava sve loše vrednosti tog
-# tipa iz kataloga — menja SAMO taj jedan parametar, telo ostaje prazno jer
-# se ovde testira samo path parametar
+# tipa iz kataloga — menja SAMO taj jedan parametar, telo ostaje validno
+# (baseline) jer se ovde testira samo path parametar
 def _generate_path_param_mutations(endpoint: EndpointModel) -> list[TestScenario]:
     scenarios = []
+    base_payload = _build_base_payload(endpoint)
     base_path = _build_base_path_params(endpoint)
     base_query = _build_base_query_params(endpoint)
     base_headers = _build_base_header_params(endpoint)
@@ -149,7 +150,7 @@ def _generate_path_param_mutations(endpoint: EndpointModel) -> list[TestScenario
             scenarios.append(TestScenario(
                 endpoint=endpoint.path,
                 method=endpoint.method,
-                payload={},
+                payload=base_payload,
                 path_params={**base_path, param.name: bad_value},
                 query_params=base_query,
                 header_params=base_headers,
