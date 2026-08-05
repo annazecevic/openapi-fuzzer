@@ -1,8 +1,35 @@
 import asyncio
 
 from fuzzer.models import EndpointModel, ParameterModel
-from fuzzer.generator.scenario_generator import TestScenario, _generate_path_param_mutations
+from fuzzer.generator.scenario_generator import (
+    TestScenario,
+    _default_value_from_schema,
+    _generate_baseline_scenario,
+    _generate_path_param_mutations,
+)
 from fuzzer.runner.http_runner import _run_one
+
+
+def test_baseline_scenario_is_valid_and_marked():
+    endpoint = EndpointModel(
+        path="/books",
+        method="POST",
+        request_schema={"title": "string", "author": "string"},
+        raw_request_schema={
+            "properties": {"title": {"type": "string"}, "author": {"type": "string"}}
+        },
+        required_fields=["title", "author"],
+    )
+
+    scenario = _generate_baseline_scenario(endpoint)
+
+    assert scenario.mutation_type == "baseline"
+    assert scenario.payload == {"title": "test_value", "author": "test_value"}
+
+
+def test_default_value_from_schema_uses_first_enum_value():
+    value = _default_value_from_schema("string", {"enum": ["red", "green", "blue"]})
+    assert value == "red"
 
 
 def test_path_param_mutation_keeps_valid_body():

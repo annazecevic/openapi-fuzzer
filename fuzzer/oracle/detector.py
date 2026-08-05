@@ -52,6 +52,17 @@ def _check_performance(result: TestResult) -> list[str]:
         ]
     return []
 
+# Za svaki (endpoint, method), proverava da li je njegov baseline (kontrolni)
+# zahtev prošao bez anomalija — koristi se da se rezultati mutacija označe
+# kao nepouzdani kad je već i sam validan zahtev pukao
+def check_baselines(results: list[TestResult]) -> dict[tuple[str, str], bool]:
+    baselines = {}
+    for r in results:
+        if r.mutation_type == "baseline":
+            ok = (200 <= r.status_code < 300) and not r.anomalies
+            baselines[(r.endpoint, r.method)] = ok
+    return baselines
+
 # Primenjuje detekciju na celu listu rezultata, dodaje anomalije bez dupliranja,
 # ispravlja passed status ako je pronađen bilo kakav problem
 def analyze_results(results: list[TestResult]) -> list[TestResult]:
@@ -62,6 +73,15 @@ def analyze_results(results: list[TestResult]) -> list[TestResult]:
                 result.anomalies.append(anomaly)
         if result.anomalies:
             result.passed = False
+
+    baseline_status = check_baselines(results)
+    for r in results:
+        if r.mutation_type == "baseline":
+            continue
+        key = (r.endpoint, r.method)
+        if key in baseline_status and not baseline_status[key]:
+            r.baseline_valid = False
+
     return results
 
 # Pravi statistički pregled — ukupno/prošlo/palo, i broj svake vrste anomalije
@@ -79,4 +99,5 @@ def summary(results: list[TestResult]) -> dict:
         "server_failures": len(server_failures),
         "contract_mismatches": len(contract_mismatches),
         "performance_anomalies": len(performance),
+        "unreliable_results": sum(1 for r in results if not r.baseline_valid and r.mutation_type != "baseline"),
     }

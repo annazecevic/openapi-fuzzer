@@ -34,10 +34,28 @@ _VALID_DEFAULTS: dict[str, Any] = {
 def _default_value(schema_type: str) -> Any:
     return _VALID_DEFAULTS.get(schema_type, "test")
 
+# Pravi validnu vrednost za polje koristeći raw šemu (enum/format/minimum) ako
+# je dostupna, a inače pada nazad na generički _default_value po tipu
+def _default_value_from_schema(field_type: str, field_raw_schema: dict) -> Any:
+    if field_raw_schema.get("enum"):
+        return field_raw_schema["enum"][0]
+    if field_raw_schema.get("format") == "email":
+        return "user@example.com"
+    if field_raw_schema.get("format") in ("date", "date-time"):
+        return "2024-01-01" if field_raw_schema["format"] == "date" else "2024-01-01T00:00:00Z"
+    if "minimum" in field_raw_schema and field_type in ("integer", "number"):
+        return field_raw_schema["minimum"]
+    return _default_value(field_type)
+
 # Pravi osnovno validno telo zahteva — svaki par (ime, tip) iz šeme
-# postaje (ime, validna_vrednost_tog_tipa) u novom rečniku
+# postaje (ime, validna_vrednost_tog_tipa) u novom rečniku, koristeći raw
+# šemu polja (enum/format/minimum) kad je dostupna
 def _build_base_payload(endpoint: EndpointModel) -> dict:
-    return {f: _default_value(t) for f, t in endpoint.request_schema.items()}
+    properties = endpoint.raw_request_schema.get("properties", {})
+    return {
+        f: _default_value_from_schema(t, properties.get(f, {}))
+        for f, t in endpoint.request_schema.items()
+    }
 
 # Pravi rečnik validnih vrednosti za sve path parametre endpoint-a
 def _build_base_path_params(endpoint: EndpointModel) -> dict:
@@ -212,12 +230,30 @@ def _generate_header_param_mutations(endpoint: EndpointModel) -> list[TestScenar
 
     return scenarios
 
+# Pravi jedan potpuno validan, nemutirani zahtev za endpoint — kontrolni
+# (baseline) scenario za poređenje sa rezultatima mutacija
+def _generate_baseline_scenario(endpoint: EndpointModel) -> TestScenario:
+    return TestScenario(
+        endpoint=endpoint.path,
+        method=endpoint.method,
+        payload=_build_base_payload(endpoint),
+        path_params=_build_base_path_params(endpoint),
+        query_params=_build_base_query_params(endpoint),
+        header_params=_build_base_header_params(endpoint),
+        mutation_type="baseline",
+        mutated_field="__baseline__",
+        description="Kontrolni (baseline) zahtev — validan po specifikaciji",
+        request_schema=endpoint.raw_request_schema,
+    )
+
 # Za svaki endpoint generiše sve relevantne mutacije (telo, path, query,
 # header) i vraća jedinstvenu listu svih test scenarija za ceo API
 def generate_scenarios(endpoints: list[EndpointModel]) -> list[TestScenario]:
     all_scenarios = []
 
     for endpoint in endpoints:
+        # Kontrolni zahtev — uvek prvi u listi za ovaj endpoint
+        all_scenarios.append(_generate_baseline_scenario(endpoint))
          # Ima telo zahteva — testiraj vrednosti polja i strukturu (obavezna/nepoznata polja)
         if endpoint.request_schema:
             all_scenarios += _generate_field_mutations(endpoint)

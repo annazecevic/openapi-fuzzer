@@ -1,5 +1,5 @@
 from fuzzer.models import TestResult
-from fuzzer.oracle.detector import detect
+from fuzzer.oracle.detector import analyze_results, detect
 
 
 SCHEMA = {
@@ -74,3 +74,26 @@ def test_client_error_no_server_failure():
     result = _error_result("CLIENT_ERROR")
     anomalies = detect(result)
     assert not any("SERVER_FAILURE" in a for a in anomalies)
+
+
+def test_failed_baseline_marks_other_results_unreliable():
+    baseline = TestResult(
+        endpoint="/users",
+        method="POST",
+        status_code=500,
+        response_time_ms=10.0,
+        mutation_type="baseline",
+        mutated_field="__baseline__",
+    )
+    mutation = TestResult(
+        endpoint="/users",
+        method="POST",
+        status_code=201,
+        response_time_ms=10.0,
+        mutation_type="type_mutation",
+        mutated_field="age",
+    )
+
+    results = analyze_results([baseline, mutation])
+
+    assert results[1].baseline_valid is False
