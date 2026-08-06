@@ -10,6 +10,7 @@ def detect(result: TestResult) -> list[str]:
     anomalies = []
     anomalies += _check_server_failure(result)
     anomalies += _check_contract_mismatch(result)
+    anomalies += _check_response_contract(result)
     anomalies += _check_performance(result)
     return anomalies
 
@@ -41,6 +42,21 @@ def _check_contract_mismatch(result: TestResult) -> list[str]:
             f"krši šemu ({e.message}) — polje '{result.mutated_field}'"
         ]
 
+    return []
+
+# Anomalija ako odgovor servera ne poštuje dokumentovanu šemu odgovora za
+# taj status kod (npr. nedostaje required polje) — proverava se samo kad
+# imamo i šemu i uspešno parsiran JSON odgovor
+def _check_response_contract(result: TestResult) -> list[str]:
+    if not result.response_schema:
+        return []
+    if result.response_json is None:
+        return []
+    try:
+        jsonschema.validate(instance=result.response_json, schema=result.response_schema)
+    except jsonschema.ValidationError as e:
+        return [f"RESPONSE_CONTRACT_MISMATCH: Odgovor za status {result.status_code} "
+                f"ne poštuje dokumentovanu šemu odgovora ({e.message})"]
     return []
 
 # Anomalija ako je vreme odgovora prešlo prag od 2 sekunde
@@ -89,7 +105,8 @@ def summary(results: list[TestResult]) -> dict:
     total = len(results)
     failed = [r for r in results if not r.passed]
     server_failures = [r for r in failed if any("SERVER_FAILURE" in a for a in r.anomalies)]
-    contract_mismatches = [r for r in failed if any("CONTRACT_MISMATCH" in a for a in r.anomalies)]
+    contract_mismatches = [r for r in failed if any(a.startswith("CONTRACT_MISMATCH") for a in r.anomalies)]
+    response_contract_mismatches = [r for r in failed if any(a.startswith("RESPONSE_CONTRACT_MISMATCH") for a in r.anomalies)]
     performance = [r for r in failed if any("PERFORMANCE_ANOMALY" in a for a in r.anomalies)]
 
     return {
@@ -98,6 +115,7 @@ def summary(results: list[TestResult]) -> dict:
         "failed": len(failed),
         "server_failures": len(server_failures),
         "contract_mismatches": len(contract_mismatches),
+        "response_contract_mismatches": len(response_contract_mismatches),
         "performance_anomalies": len(performance),
         "unreliable_results": sum(1 for r in results if not r.baseline_valid and r.mutation_type != "baseline"),
     }

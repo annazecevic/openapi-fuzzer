@@ -57,6 +57,8 @@ async def _run_one(
     response_size_bytes = 0
     error_message = None
     error_category: str | None = None
+    response_schema: dict = {}
+    response_json: dict | None = None
 
 # Semafor ograničava koliko se zahteva izvršava istovremeno
     async with semaphore:
@@ -83,6 +85,12 @@ async def _run_one(
                 response_body = response.text[:2000] # skraćeno, da se ne troši memorija
             except Exception:
                 response_body = "<binary>"  # odgovor nije tekstualan
+
+            response_schema = scenario.response_schemas.get(status_code, {})
+            try:
+                response_json = response.json()
+            except Exception:
+                response_json = None
 
         except httpx.TimeoutException:
             # Server nije odgovorio u zadatom roku
@@ -121,6 +129,8 @@ async def _run_one(
         request_schema=scenario.request_schema,
         error_category=error_category,
         error_message=error_message,
+        response_schema=response_schema,
+        response_json=response_json,
     )
 
 # Paralelno pokreće sve test scenarije (semafor ograničava broj istovremenih

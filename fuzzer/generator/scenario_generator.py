@@ -17,6 +17,7 @@ class TestScenario:
     mutated_field: str #koje polje je namerno "pokvareno"
     description: str = ""
     request_schema: dict = field(default_factory=dict)
+    response_schemas: dict = field(default_factory=dict)
 
 # Po jedna validna vrednost za svaki tip — koristi se da osnovni zahtev bude
 # potpuno ispravan, tako da se u testu menja samo jedno ciljano polje.
@@ -95,6 +96,7 @@ def _generate_field_mutations(endpoint: EndpointModel) -> list[TestScenario]:
                 mutated_field=field_name,
                 description=f"'{field_name}' ({field_type}) = {repr(bad_value)[:50]}",
                 request_schema=endpoint.raw_request_schema,
+                response_schemas=endpoint.response_schemas,
             ))
 
     return scenarios
@@ -122,6 +124,7 @@ def _generate_structure_mutations(endpoint: EndpointModel) -> list[TestScenario]
             mutated_field=required_field,
             description=f"Nedostaje required polje '{required_field}'",
             request_schema=endpoint.raw_request_schema,
+            response_schemas=endpoint.response_schemas,
         ))
 
     scenarios.append(TestScenario(
@@ -135,6 +138,7 @@ def _generate_structure_mutations(endpoint: EndpointModel) -> list[TestScenario]
         mutated_field="__extra_field__",
         description="Nepostojece polje koje nije u spec-u",
         request_schema=endpoint.raw_request_schema,
+        response_schemas=endpoint.response_schemas,
     ))
 
     
@@ -149,6 +153,7 @@ def _generate_structure_mutations(endpoint: EndpointModel) -> list[TestScenario]
         mutated_field="__deep_nest__",
         description="8 nivoa nestovanja",
         request_schema=endpoint.raw_request_schema,
+        response_schemas=endpoint.response_schemas,
     ))
 
     return scenarios
@@ -175,6 +180,7 @@ def _generate_path_param_mutations(endpoint: EndpointModel) -> list[TestScenario
                 mutation_type="type_mutation",
                 mutated_field=param.name,
                 description=f"Path param '{param.name}' = {repr(bad_value)[:50]}",
+                response_schemas=endpoint.response_schemas,
             ))
 
     return scenarios
@@ -201,6 +207,7 @@ def _generate_query_param_mutations(endpoint: EndpointModel) -> list[TestScenari
                 mutation_type="type_mutation" if not isinstance(bad_value, str) else "boundary",
                 mutated_field=param.name,
                 description=f"Query param '{param.name}' = {repr(bad_value)[:50]}",
+                response_schemas=endpoint.response_schemas,
             ))
 
     return scenarios
@@ -226,6 +233,7 @@ def _generate_header_param_mutations(endpoint: EndpointModel) -> list[TestScenar
                 mutation_type="type_mutation" if not isinstance(bad_value, str) else "boundary",
                 mutated_field=param.name,
                 description=f"Header param '{param.name}' = {repr(bad_value)[:50]}",
+                response_schemas=endpoint.response_schemas,
             ))
 
     return scenarios
@@ -244,6 +252,7 @@ def _generate_baseline_scenario(endpoint: EndpointModel) -> TestScenario:
         mutated_field="__baseline__",
         description="Kontrolni (baseline) zahtev — validan po specifikaciji",
         request_schema=endpoint.raw_request_schema,
+        response_schemas=endpoint.response_schemas,
     )
 
 # Za svaki endpoint generiše sve relevantne mutacije (telo, path, query,

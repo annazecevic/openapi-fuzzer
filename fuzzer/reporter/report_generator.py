@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from fuzzer.models import TestResult
 
@@ -20,7 +20,10 @@ def _render_html(
     api_title: str,
     api_version: str,
 ) -> str:
-    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES_DIR)),
+        autoescape=select_autoescape(["html", "xml"]),
+    )
     template = env.get_template("report.html.j2")
     return template.render(
         title=api_title,
@@ -56,7 +59,10 @@ def _render_pdf_html(
     api_title: str,
     api_version: str,
 ) -> str:
-    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES_DIR)),
+        autoescape=select_autoescape(["html", "xml"]),
+    )
     template = env.get_template("report.pdf.j2")
     return template.render(
         title=api_title,

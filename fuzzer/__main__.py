@@ -85,6 +85,7 @@ def main() -> int:
     print(f"      Anomalija:            {stats['failed']}")
     print(f"        - Server Failure:     {stats['server_failures']}")
     print(f"        - Contract Mismatch:  {stats['contract_mismatches']}")
+    print(f"        - Response Contract:  {stats['response_contract_mismatches']}")
     print(f"        - Performance:        {stats['performance_anomalies']}")
     print(f"      Nepouzdani rezultati: {stats['unreliable_results']} (baseline pao)")
     print(f"      API Coverage:         {tested_endpoints}/{total_endpoints} endpointa ({coverage_pct:.1f}%)")

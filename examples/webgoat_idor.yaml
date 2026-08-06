@@ -26,7 +26,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         "200":
           description: Profil pronađen
@@ -43,7 +43,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -54,18 +54,31 @@ paths:
                 - name
                 - color
                 - role
+                - userId
               properties:
                 name:
                   type: string
                 color:
                   type: string
                 role:
-                  type: integer
+                  type: string
                 size:
+                  type: string
+                userId:
                   type: string
       responses:
         "200":
           description: Profil ažuriran
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lessonCompleted]
+                properties:
+                  lessonCompleted:
+                    type: boolean
+                  feedback:
+                    type: string
         "401":
           description: Neautorizovan
         "403":

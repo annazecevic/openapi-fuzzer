@@ -97,3 +97,37 @@ def test_failed_baseline_marks_other_results_unreliable():
     results = analyze_results([baseline, mutation])
 
     assert results[1].baseline_valid is False
+
+
+RESPONSE_SCHEMA = {
+    "type": "object",
+    "required": ["lessonCompleted"],
+    "properties": {
+        "lessonCompleted": {"type": "boolean"},
+        "feedback": {"type": "string"},
+    },
+}
+
+
+def _response_result(response_json: dict | None, response_schema: dict) -> TestResult:
+    return TestResult(
+        endpoint="/WebGoat/IDOR/profile/{userId}",
+        method="PUT",
+        status_code=200,
+        response_time_ms=10.0,
+        mutated_field="__baseline__",
+        response_schema=response_schema,
+        response_json=response_json,
+    )
+
+
+def test_valid_response_json_no_response_contract_mismatch():
+    result = _response_result({"lessonCompleted": True, "feedback": "ok"}, RESPONSE_SCHEMA)
+    anomalies = detect(result)
+    assert not any("RESPONSE_CONTRACT_MISMATCH" in a for a in anomalies)
+
+
+def test_response_json_missing_required_field_gives_response_contract_mismatch():
+    result = _response_result({"feedback": "ok"}, RESPONSE_SCHEMA)
+    anomalies = detect(result)
+    assert any("RESPONSE_CONTRACT_MISMATCH" in a for a in anomalies)
