@@ -8,6 +8,7 @@ from fuzzer.generator.scenario_generator import (
     _generate_path_param_mutations,
 )
 from fuzzer.runner.http_runner import _run_one
+from fuzzer.runner.rate_limiter import RateLimiter
 
 
 def test_baseline_scenario_is_valid_and_marked():
@@ -94,7 +95,7 @@ def test_query_params_sent_for_post_put_delete():
 
         asyncio.run(_run_one(
             scenario, client, token=None, timeout=5.0,
-            semaphore=asyncio.Semaphore(1), delay=0.0,
+            semaphore=asyncio.Semaphore(1), rate_limiter=RateLimiter(0),
         ))
 
         assert client.calls[0]["params"] == {"limit": 5}

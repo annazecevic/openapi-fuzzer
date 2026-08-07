@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--url", required=True, help="Base URL ciljnog API-ja, npr. http://localhost:8080")
     parser.add_argument("--token", default=None, help="Opcioni Bearer token za autentifikaciju.")
     parser.add_argument("--output-dir", default=".", help="Folder gde se snimaju izveštaji (default: trenutni folder).")
-    parser.add_argument("--delay", type=float, default=0.0, help="Pauza u sekundama između zahteva (default: 0).")
+    parser.add_argument("--rate-limit", type=float, default=0.0, help="Maksimalan broj zahteva u sekundi, 0 = bez ograničenja")
     parser.add_argument("--timeout", type=float, default=10.0, help="Timeout po HTTP zahtevu u sekundama (default: 10).")
     parser.add_argument("--concurrency", type=int, default=1, help="Broj paralelnih HTTP zahteva (default: 1).")
     parser.add_argument("--pdf", action="store_true", default=False, help="Generiši i PDF izveštaj (zahteva: pip install xhtml2pdf).")
@@ -65,7 +65,7 @@ def main() -> int:
         token=args.token,
         timeout=args.timeout,
         concurrency=args.concurrency,
-        delay=args.delay,
+        requests_per_second=args.rate_limit,
         progress_cb=on_progress,
     )
 

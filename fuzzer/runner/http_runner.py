@@ -6,6 +6,7 @@ import httpx
 
 from fuzzer.models import TestResult
 from fuzzer.generator.scenario_generator import TestScenario
+from fuzzer.runner.rate_limiter import RateLimiter
 
 
 DEFAULT_TIMEOUT = 10.0
@@ -42,7 +43,7 @@ async def _run_one(
     token: str | None,
     timeout: float,
     semaphore: asyncio.Semaphore,
-    delay: float,
+    rate_limiter: RateLimiter,
 ) -> TestResult:
     
     # Pravi konačan URL i zaglavlja za ovaj konkretan test
@@ -62,6 +63,7 @@ async def _run_one(
 
 # Semafor ograničava koliko se zahteva izvršava istovremeno
     async with semaphore:
+        await rate_limiter.acquire()
         try:
             start = time.perf_counter()
             # Bira se HTTP metoda i šalje se zahtev
@@ -109,10 +111,6 @@ async def _run_one(
             error_category = "CLIENT_ERROR"
             error_message = str(exc)
 
-        # Opciono usporavanje između zahteva, da se server ne preplavi  
-        if delay > 0:
-            await asyncio.sleep(delay)
-
 # Pakuje sve prikupljene podatke u finalni rezultat testa
     return TestResult(
         endpoint=scenario.endpoint,
@@ -141,18 +139,19 @@ async def _run_all_async(
     token: str | None,
     timeout: float,
     concurrency: int,
-    delay: float,
+    requests_per_second: float,
     progress_cb: Callable | None,
 ) -> list[TestResult]:
     semaphore = asyncio.Semaphore(concurrency)
+    rate_limiter = RateLimiter(requests_per_second)
     completed = 0
     lock = asyncio.Lock() # sprečava da dva zadatka istovremeno menjaju "completed"
 
     async with httpx.AsyncClient(base_url=base_url, timeout=timeout) as client:
-        # Izvršava jedan scenario i bezbedno javlja napredak    
+        # Izvršava jedan scenario i bezbedno javlja napredak
         async def run_and_report(scenario: TestScenario) -> TestResult:
             nonlocal completed
-            result = await _run_one(scenario, client, token, timeout, semaphore, delay)
+            result = await _run_one(scenario, client, token, timeout, semaphore, rate_limiter)
             async with lock:
                 completed += 1
                 if progress_cb:
@@ -172,9 +171,9 @@ def run_all(
     token: str | None = None,
     timeout: float = DEFAULT_TIMEOUT,
     concurrency: int = 1,
-    delay: float = 0.0,
+    requests_per_second: float = 0,
     progress_cb: Callable | None = None,
 ) -> list[TestResult]:
     return asyncio.run(
-        _run_all_async(scenarios, base_url, token, timeout, concurrency, delay, progress_cb)
+        _run_all_async(scenarios, base_url, token, timeout, concurrency, requests_per_second, progress_cb)
     )
