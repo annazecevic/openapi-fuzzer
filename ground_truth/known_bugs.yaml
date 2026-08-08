@@ -1,0 +1,49 @@
+- id: BUG-01
+  endpoint: /books
+  method: POST
+  field: title
+  description: "Server puca (500) ako je title lista umesto string"
+  expected_anomaly: SERVER_FAILURE
+  findable_by_tool: true
+- id: BUG-02
+  endpoint: /books
+  method: POST
+  field: title
+  description: "Prihvata zahtev bez obaveznog title polja, vraca 201"
+  expected_anomaly: CONTRACT_MISMATCH
+  findable_by_tool: true
+- id: BUG-03
+  endpoint: /books
+  method: POST
+  field: author
+  description: "Prihvata zahtev bez obaveznog author polja, vraca 201"
+  expected_anomaly: CONTRACT_MISMATCH
+  findable_by_tool: true
+- id: BUG-04
+  endpoint: /books/{bookId}
+  method: PUT
+  field: title
+  description: "Prihvata bilo koje telo bez obaveznih polja, vraca 200"
+  expected_anomaly: CONTRACT_MISMATCH
+  findable_by_tool: true
+- id: BUG-05
+  endpoint: /books/{bookId}
+  method: PUT
+  field: bookId
+  description: "Prihvata bilo koji bookId ukljucujuci nepostojeci, vraca 200 umesto 404 - logicka greska koju trenutni alat ne moze da otkrije (nema koncept postojanja resursa)"
+  expected_anomaly: NONE
+  findable_by_tool: false
+- id: BUG-06
+  endpoint: /users
+  method: POST
+  field: email
+  description: "Prihvata zahtev bez obaveznog email polja, vraca 201"
+  expected_anomaly: CONTRACT_MISMATCH
+  findable_by_tool: true
+- id: BUG-07
+  endpoint: /users
+  method: POST
+  field: password
+  description: "Prihvata zahtev bez obaveznog password polja, vraca 201"
+  expected_anomaly: CONTRACT_MISMATCH
+  findable_by_tool: true

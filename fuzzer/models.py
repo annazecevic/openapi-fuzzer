@@ -46,7 +46,7 @@ class TestResult(BaseModel):
     error_message: Optional[str] = None
     baseline_valid: bool = True
     response_schema: Dict[str, Any] = Field(default_factory=dict)
-    response_json: Optional[dict] = None
+    response_json: Optional[Any] = None
 
 # Finalni, kompletan rezultat parsiranja spec fajla — ovo pravi
 # _parse_raw() u parseru, sadrži listu svih EndpointModel objekata

@@ -32,11 +32,14 @@ async def create_book(request: Request):
  
     # Namerno loše ponašanje — ako title nije string, server crasha (500)
     title = body.get("title")
+    # BUG-01: Server puca (500) ako je title lista umesto string
     if isinstance(title, list):
         # Simuliramo server crash na neočekivanom tipu
         raise Exception("Unexpected type caused server error")
- 
+
     # Namerno loše ponašanje — prihvata prazan title bez validacije (contract mismatch)
+    # BUG-02: Prihvata zahtev bez obaveznog title polja, vraca 201
+    # BUG-03: Prihvata zahtev bez obaveznog author polja, vraca 201
     return JSONResponse(status_code=201, content={"id": 3, "title": title})
  
  
@@ -59,6 +62,8 @@ async def update_book(bookId: str, request: Request):
     except Exception:
         return JSONResponse(status_code=400, content={"error": "Invalid JSON"})
  
+    # BUG-04: Prihvata bilo koje telo bez obaveznih polja, vraca 200
+    # BUG-05: Prihvata bilo koji bookId, ukljucujuci nepostojeci, vraca 200 umesto 404
     return JSONResponse(status_code=200, content={"id": bookId, **body})
  
  
@@ -78,5 +83,7 @@ async def register_user(request: Request):
  
     # Namerno loše — ne validira required polja, prihvata sve
     username = body.get("username", "")
+    # BUG-06: Prihvata zahtev bez obaveznog email polja, vraca 201
+    # BUG-07: Prihvata zahtev bez obaveznog password polja, vraca 201
     return JSONResponse(status_code=201, content={"username": username})
  
