@@ -13,3 +13,6 @@ dependencies = [
 
 [project.scripts]
 fuzzer = "fuzzer.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["fuzzer*"]
