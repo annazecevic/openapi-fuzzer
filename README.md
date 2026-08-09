@@ -6,7 +6,7 @@ Alat za automatizovano bezbednosno testiranje REST API-ja zasnovan na OpenAPI sp
 
 ---
 
-## Šta alat detektuje
+## Tipovi anomalija koje alat detektuje
 
 | Anomalija | Opis | Primer |
 |---|---|---|
@@ -36,45 +36,45 @@ OpenAPI YAML/JSON
                                       │  Reporter   │ → report.html / report.pdf / report.json
                                       └─────────────┘
 ```
-\* broj zavisi od spec-a — jedan `baseline` scenario po endpointu, plus
-`type_mutation` / `boundary` / `injection` / `structure` mutacije za svako
-polje/parametar
+\* Tačan broj generisanih scenarija zavisi od učitane specifikacije: po jedan
+`baseline` scenario za svaki endpoint, uz dodatne `type_mutation` / `boundary`
+/ `injection` / `structure` mutacije za svako polje odnosno parametar.
 
 ---
 
-## Potrebno
+## Preduslovi
 
 - **Python 3.12+**
-- **Docker** (samo za Docker način pokretanja)
+- **Docker** (samo za pokretanje putem Docker-a)
 
-Provjeri verziju Pythona:
+Provera instalirane verzije Python-a:
 ```bash
 python3 --version
 ```
 
 ---
 
-## Način 1 — Docker (najlakše, jednom komandom)
+## Način 1 — Docker (pokretanje jednom komandom)
 
-Ovo pokreće i mock API i fuzzer automatski. Ne trebaš ništa instalirati.
+Ova komanda automatski pokreće mock API i fuzzer, bez potrebe za dodatnom instalacijom zavisnosti.
 
 ```bash
 docker compose up
 ```
 
-Izveštaj se snima u `reports/` folder.
+Generisani izveštaj se čuva u folderu `reports/`.
 
 ---
 
-## Način 2 — Lokalno (više kontrole)
+## Način 2 — Lokalno pokretanje (veća kontrola nad parametrima)
 
-### Korak 1 — Instaliraj zavisnosti
+### Korak 1 — Instalacija zavisnosti
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Korak 2 — Pokreni target API
+### Korak 2 — Pokretanje ciljnog API-ja
 
 **Opcija A — Mock API** (lokalni testni server koji je namerno ranjiv):
 ```bash
@@ -84,12 +84,12 @@ uvicorn mock_api:app --port 8080
 **Opcija B — WebGoat** (OWASP ranjiva aplikacija za testiranje):
 ```bash
 docker start webgoat
-# ili ako prvi put:
+# ili, prilikom prvog pokretanja:
 docker run -d --name webgoat -p 8081:8080 webgoat/webgoat
 ```
-WebGoat se otvori na `http://localhost:8081/WebGoat` — registruj se i uloguj.
+WebGoat aplikacija je dostupna na `http://localhost:8081/WebGoat`, gde je potrebno napraviti nalog i prijaviti se.
 
-### Korak 3 — Pokreni fuzzer
+### Korak 3 — Pokretanje alata
 
 ```bash
 python3 -m fuzzer --spec <putanja_do_spec> --url <adresa_api>
@@ -131,7 +131,16 @@ python3 -m fuzzer \
   --output-dir ./reports
 ```
 
-### Primer 4 — Spotify (studentski projekat)
+### Primer 4 — JSON spec fajl (umesto YAML)
+Parser podjednako podržava `.json` spec fajlove — `examples/bookstore.json` je isti Bookstore API kao `examples/bookstore.yaml`, samo u JSON formatu:
+```bash
+python3 -m fuzzer \
+  --spec examples/bookstore.json \
+  --url http://localhost:8080 \
+  --output-dir ./reports
+```
+
+### Primer 5 — Spotify (studentski projekat)
 ```bash
 # Pokreni Spotify servise (samo prvi put, gradi Docker image):
 cd /putanja/do/spotify && docker compose -f docker-compose.fuzzer.yml up -d
@@ -157,7 +166,7 @@ python3 -m fuzzer \
 
 ## Scenariji testiranja (sekcija 4.2 specifikacije)
 
-Fuzzer pokrivauje tri propisana scenarija napadom koji odgovara tipu mutacije:
+Alat pokriva tri propisana scenarija napada, pri čemu svaki scenario odgovara određenom tipu mutacije:
 
 | Scenario | Opis | Tip mutacije | Primer |
 |---|---|---|---|
@@ -167,22 +176,22 @@ Fuzzer pokrivauje tri propisana scenarija napadom koji odgovara tipu mutacije:
 
 ---
 
-## Svi argumenti
+## Parametri komandne linije
 
-| Argument | Obavezno | Opis | Default |
+| Argument | Obavezno | Opis | Podrazumevana vrednost |
 |---|---|---|---|
 | `--spec` | Da | Putanja do OpenAPI YAML ili JSON fajla | — |
-| `--url` | Da | Adresa API-ja, npr. `http://localhost:8080` | — |
-| `--token` | Ne | Auth token. Bearer: `abc123`. Cookie: `JSESSIONID=abc123` | — |
+| `--url` | Da | Adresa ciljnog API-ja, npr. `http://localhost:8080` | — |
+| `--token` | Ne | Token za autentifikaciju — kao Bearer token (`abc123`) ili kao Cookie (`JSESSIONID=abc123`) | — |
 | `--output-dir` | Ne | Folder za izveštaje | `.` (trenutni folder) |
 | `--concurrency` | Ne | Broj paralelnih zahteva | `1` |
 | `--rate-limit` | Ne | Maksimalan broj zahteva u sekundi, 0 = bez ograničenja (token bucket rate limiting, ne fiksna pauza) | `0` |
 | `--timeout` | Ne | Timeout po zahtevu u sekundama | `10` |
-| `--pdf` | Ne | Generiši i PDF izveštaj | isključeno |
+| `--pdf` | Ne | Generisanje PDF izveštaja | isključeno |
 
 ---
 
-## Kako čitati ispis
+## Tumačenje izlaza programa
 
 ```
 [1/5] Parsiranje OpenAPI spec-a: examples/bookstore.yaml
@@ -216,25 +225,25 @@ Endpoints: 6
 
 ---
 
-## Izveštaji
+## Generisani izveštaji
 
-Nakon pokretanja dobijаš tri fajla u `--output-dir`:
+Nakon izvršavanja, u direktorijumu zadatom parametrom `--output-dir` generišu se tri fajla:
 
 | Fajl | Opis |
 |---|---|
-| `report.html` | Vizuelni izveštaj — otvori u browseru |
+| `report.html` | Vizuelni izveštaj, namenjen pregledu u veb pregledaču |
 | `report.json` | Mašinski čitljiv log svih rezultata |
-| `report.pdf` | PDF verzija (samo uz `--pdf` flag) |
+| `report.pdf` | PDF verzija izveštaja (generiše se samo uz `--pdf` opciju) |
 
 ---
 
 ## Evaluacija preciznosti alata (sekcija 5.2)
 
-Koristi se za merenje preciznosti alata (koliko anomalija su pravi propusti). Postoje dva pristupa, zavisno od toga da li unapred znaš koji bagovi postoje u target API-ju.
+Koristi se za merenje preciznosti alata, odnosno za utvrđivanje koliki procenat prijavljenih anomalija predstavlja stvarne propuste. Postoje dva pristupa, u zavisnosti od toga da li unapred postoji poznata lista bagova u ciljnom API-ju.
 
-### Opcija A — Ground truth evaluacija (preporučeno, kad imaš unapred pripremljenu listu bagova)
+### Opcija A — Ground truth evaluacija (preporučeno, ukoliko postoji unapred pripremljena lista bagova)
 
-Za `mock_api.py` postoji `ground_truth/known_bugs.yaml` — lista bagova definisana **unapred, pre pokretanja alata** (svaki bag ima `endpoint`, `method`, `field`, `expected_anomaly` i `findable_by_tool`). `fuzzer/oracle/ground_truth_eval.py` automatski poredi `report.json` sa tom listom, bez ručne anotacije.
+Za potrebe `mock_api.py` postoji fajl `ground_truth/known_bugs.yaml` — lista bagova definisana **unapred, pre pokretanja alata** (svaki bag sadrži polja `endpoint`, `method`, `field`, `expected_anomaly` i `findable_by_tool`). Skripta `fuzzer/oracle/ground_truth_eval.py` automatski poredi `report.json` sa tom listom, bez potrebe za ručnom anotacijom.
 
 ```bash
 python3 -m fuzzer.oracle.ground_truth_eval \
@@ -242,7 +251,7 @@ python3 -m fuzzer.oracle.ground_truth_eval \
   --known-bugs ground_truth/known_bugs.yaml
 ```
 
-Izlaz pokazuje koji je bag ID pronađen, koji je promašen, koji su lažni pozitivi (sa endpoint/method/mutated_field za svaki), bagove koje alat po dizajnu ne može da nađe (npr. IDOR — pitanje autorizacije, ne šeme), i finalne Precision/Recall/F1 metrike (računate samo od bagova sa `findable_by_tool: true`).
+Izlaz prikazuje koji su bag ID-jevi pronađeni, koji su promašeni, koji su lažni pozitivi (sa podacima o endpoint-u, metodi i mutiranom polju za svaki), bagove koje alat po dizajnu ne može da otkrije (npr. IDOR, koji je pitanje autorizacije, a ne šeme), kao i finalne Precision/Recall/F1 metrike (računate isključivo na osnovu bagova sa `findable_by_tool: true`).
 
 Primer ispisa (skraćeno):
 ```
@@ -268,28 +277,29 @@ Primer ispisa (skraćeno):
   F1 Score:  0.5161
 ──────────────────────────────────────────────────────
 ```
-(Nizak precision ovde ne znači da je oracle pogrešan — mock API ima svesno više propusta u validaciji tipova nego što `known_bugs.yaml` pokriva; svaki lažni pozitiv iz liste je stvarna, samo neanotirana greška u `mock_api.py`.)
+Nizak precision u ovom primeru ne ukazuje na grešku u oracle-u — mock API namerno sadrži više propusta u validaciji tipova nego što `known_bugs.yaml` pokriva, pa svaki lažni pozitiv iz liste zapravo predstavlja stvarnu, samo neanotiranu grešku u `mock_api.py`.
 
-### Opcija B — Ručna F1 anotacija (kad NEMAŠ unapred pripremljenu listu bagova)
+### Opcija B — Ručna F1 anotacija (kada ne postoji unapred pripremljena lista bagova)
 
-#### Korak 1 — Pripremi fajl za anotaciju
+#### Korak 1 — Priprema fajla za anotaciju
 ```bash
 python3 -m fuzzer.oracle.annotate \
   --input reports/report.json \
   --output reports/annotate.json
 ```
 
-#### Korak 2 — Otvori `reports/annotate.json` i za svaku anomaliju postavi
+#### Korak 2 — Ručna anotacija fajla `reports/annotate.json`
+Za svaku anomaliju potrebno je postaviti:
 ```json
 "true_positive": true    ← stvarni bezbednosni propust
 "true_positive": false   ← lažna uzbuna
 ```
-Na kraju fajla dodaj:
+Na kraju fajla potrebno je dodati:
 ```json
-"false_negatives": 1    ← propusti koje fuzzer NIJE pronašao
+"false_negatives": 1    ← propusti koje fuzzer nije pronašao
 ```
 
-#### Korak 3 — Izračunaj F1
+#### Korak 3 — Izračunavanje F1 mere
 ```bash
 python3 -m fuzzer.oracle.f1_score --ground-truth reports/annotate.json
 ```
@@ -343,6 +353,7 @@ openapi-fuzzer/
 │
 ├── examples/
 │   ├── bookstore.yaml              ← primer spec-a za mock API
+│   ├── bookstore.json              ← isti primer spec-a u JSON formatu
 │   ├── webgoat_idor.yaml           ← WebGoat IDOR spec (Scenario 1 — enumeracija)
 │   ├── spotify_user_service.yaml   ← Spotify User Service spec (port 9080)
 │   └── spotify_content_service.yaml← Spotify Content Service spec (port 9081)
@@ -350,28 +361,29 @@ openapi-fuzzer/
 ├── ground_truth/
 │   └── known_bugs.yaml              ← unapred definisana lista poznatih bagova za mock_api.py
 │
-├── tests/                   ← 22 unit testa (pytest)
+├── tests/                   ← 24 unit testa (pytest)
 │   ├── test_oracle.py               ← detektor anomalija (contract/response/server failure)
 │   ├── test_scenario_generator.py   ← generisanje scenarija i mutacioni katalog
 │   ├── test_rate_limiter.py         ← token-bucket rate limiter
-│   └── test_ground_truth_eval.py    ← ground truth evaluacija
+│   ├── test_ground_truth_eval.py    ← ground truth evaluacija
+│   └── test_parser.py               ← YAML/JSON parsiranje spec fajlova
 │
 ├── mock_api.py              ← lokalni ranjivi API za demonstraciju
 ├── docker-compose.yml       ← pokreće mock API + fuzzer jednom komandom (+ PDF)
 ├── Dockerfile               ← Docker image za fuzzer
 ├── requirements.txt         ← Python zavisnosti
-└── README.md                ← ovo što čitaš
+└── README.md                ← dokumentacija projekta
 ```
 
 ---
 
-## Brza referenca — najčešće komande
+## Pregled najčešće korišćenih komandi
 
 ```bash
-# Instaliraj jednom
+# Instalacija zavisnosti (jednokratno)
 pip install -r requirements.txt
 
-# Pokreni mock API (u zasebnom terminalu)
+# Pokretanje mock API-ja (u zasebnom terminalu)
 uvicorn mock_api:app --port 8080
 
 # Osnovno pokretanje
@@ -398,10 +410,10 @@ python3 -m fuzzer.oracle.f1_score --ground-truth reports/annotate.json
 
 ---
 
-## Exit kodovi
+## Povratne vrednosti (exit kodovi)
 
 | Kod | Značenje |
 |---|---|
-| `0` | Fuzzing završen, nema anomalija |
-| `1` | Fuzzing završen, pronađene anomalije |
+| `0` | Izvršavanje završeno, nisu pronađene anomalije |
+| `1` | Izvršavanje završeno, pronađene su anomalije |
 | `2` | Greška pri pokretanju (neispravan spec, API nedostupan) |

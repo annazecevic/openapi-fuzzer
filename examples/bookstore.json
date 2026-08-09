@@ -1,0 +1,240 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Bookstore API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/books": {
+      "get": {
+        "operationId": "listBooks",
+        "summary": "Lista svih knjiga",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "genre",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista knjiga",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Book"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server greška"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createBook",
+        "summary": "Dodaj novu knjigu",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Knjiga kreirana"
+          },
+          "400": {
+            "description": "Loš zahtev"
+          }
+        }
+      }
+    },
+    "/books/{bookId}": {
+      "parameters": [
+        {
+          "name": "bookId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getBook",
+        "summary": "Dohvati knjigu po ID-u",
+        "responses": {
+          "200": {
+            "description": "Knjiga pronađena",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Book"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nije pronađena"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateBook",
+        "summary": "Ažuriraj knjigu",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ažurirana knjiga"
+          },
+          "404": {
+            "description": "Nije pronađena"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBook",
+        "summary": "Obriši knjigu",
+        "responses": {
+          "204": {
+            "description": "Obrisana"
+          },
+          "404": {
+            "description": "Nije pronađena"
+          }
+        }
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "registerUser",
+        "summary": "Registracija korisnika",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "age": {
+                    "type": "integer"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Korisnik kreiran"
+          },
+          "409": {
+            "description": "Username već postoji"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Book": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "author"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "price": {
+            "type": "number"
+          },
+          "in_stock": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateBookRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "author"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "price": {
+            "type": "number"
+          },
+          "genre": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

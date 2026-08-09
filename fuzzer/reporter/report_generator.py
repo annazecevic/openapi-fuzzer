@@ -13,6 +13,19 @@ from fuzzer.models import TestResult
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
+# json.dumps po defaultu upisuje Infinity/-Infinity/NaN kao gole tokene —
+# Python to ume da pročita nazad, ali nije validan JSON po specifikaciji
+# (strogi parseri, npr. u editorima, to odbijaju). Ove vrednosti se ovde
+# rekurzivno pretvaraju u string pre serijalizacije.
+def _json_safe(obj):
+    if isinstance(obj, float) and (obj != obj or obj in (float("inf"), float("-inf"))):
+        return str(obj)
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_json_safe(v) for v in obj]
+    return obj
+
 # Popunjava HTML šablon (Jinja2) podacima o testiranju i vraća gotov HTML tekst
 def _render_html(
     results: list[TestResult],
@@ -124,6 +137,6 @@ def generate_json(
 
     output = Path(output_path)
     # default=str — ako naiđe na tip koji ne zna da serijalizuje, pretvori ga u string
-    output.write_text(json.dumps(log, indent=2, default=str), encoding="utf-8")
+    output.write_text(json.dumps(_json_safe(log), indent=2, default=str), encoding="utf-8")
     print(f"JSON log snimljen: {output.resolve()}")
     return str(output.resolve())
