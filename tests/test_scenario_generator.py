@@ -1,14 +1,42 @@
 import asyncio
 
 from fuzzer.models import EndpointModel, ParameterModel
+from fuzzer.generator.mutation_catalog import _SQL_INJECTION, get_mutations
 from fuzzer.generator.scenario_generator import (
     TestScenario,
     _default_value_from_schema,
     _generate_baseline_scenario,
+    _generate_field_mutations,
     _generate_path_param_mutations,
 )
 from fuzzer.runner.http_runner import _run_one
 from fuzzer.runner.rate_limiter import RateLimiter
+
+
+def test_get_mutations_returns_category_value_tuples():
+    mutations = get_mutations("string")
+
+    assert all(isinstance(m, tuple) and len(m) == 2 for m in mutations)
+    categories = {category for category, _ in mutations}
+    assert "injection" in categories
+    assert "boundary" in categories
+    assert "type_mutation" in categories
+
+
+def test_field_mutation_marks_sql_injection_as_injection_not_boundary():
+    endpoint = EndpointModel(
+        path="/books",
+        method="POST",
+        request_schema={"title": "string"},
+        required_fields=["title"],
+    )
+
+    scenarios = _generate_field_mutations(endpoint)
+    sql_injection_scenarios = [s for s in scenarios if s.payload["title"] == _SQL_INJECTION]
+
+    assert sql_injection_scenarios
+    for scenario in sql_injection_scenarios:
+        assert scenario.mutation_type == "injection"
 
 
 def test_baseline_scenario_is_valid_and_marked():

@@ -82,7 +82,7 @@ def _generate_field_mutations(endpoint: EndpointModel) -> list[TestScenario]:
     header_params = _build_base_header_params(endpoint)
 
     for field_name, field_type in endpoint.request_schema.items():
-        for bad_value in get_mutations(field_type):
+        for category, bad_value in get_mutations(field_type):
             mutated = base.copy()  # kopija da se ne pokvari originalna baza
             mutated[field_name] = bad_value # menja se samo jedno polje
             scenarios.append(TestScenario(
@@ -92,7 +92,7 @@ def _generate_field_mutations(endpoint: EndpointModel) -> list[TestScenario]:
                 path_params=path_params,
                 query_params=query_params,
                 header_params=header_params,
-                mutation_type="type_mutation" if not isinstance(bad_value, str) else "boundary",
+                mutation_type=category,
                 mutated_field=field_name,
                 description=f"'{field_name}' ({field_type}) = {repr(bad_value)[:50]}",
                 request_schema=endpoint.raw_request_schema,
@@ -169,7 +169,7 @@ def _generate_path_param_mutations(endpoint: EndpointModel) -> list[TestScenario
     base_headers = _build_base_header_params(endpoint)
 
     for param in endpoint.path_params:
-        for bad_value in get_mutations(param.schema_type):
+        for category, bad_value in get_mutations(param.schema_type):
             scenarios.append(TestScenario(
                 endpoint=endpoint.path,
                 method=endpoint.method,
@@ -177,7 +177,7 @@ def _generate_path_param_mutations(endpoint: EndpointModel) -> list[TestScenario
                 path_params={**base_path, param.name: bad_value},
                 query_params=base_query,
                 header_params=base_headers,
-                mutation_type="type_mutation",
+                mutation_type=category,
                 mutated_field=param.name,
                 description=f"Path param '{param.name}' = {repr(bad_value)[:50]}",
                 response_schemas=endpoint.response_schemas,
@@ -196,7 +196,7 @@ def _generate_query_param_mutations(endpoint: EndpointModel) -> list[TestScenari
     base_headers = _build_base_header_params(endpoint)
 
     for param in endpoint.query_params:
-        for bad_value in get_mutations(param.schema_type):
+        for category, bad_value in get_mutations(param.schema_type):
             scenarios.append(TestScenario(
                 endpoint=endpoint.path,
                 method=endpoint.method,
@@ -204,7 +204,7 @@ def _generate_query_param_mutations(endpoint: EndpointModel) -> list[TestScenari
                 path_params=base_path,
                 query_params={**base_query, param.name: bad_value},
                 header_params=base_headers,
-                mutation_type="type_mutation" if not isinstance(bad_value, str) else "boundary",
+                mutation_type=category,
                 mutated_field=param.name,
                 description=f"Query param '{param.name}' = {repr(bad_value)[:50]}",
                 response_schemas=endpoint.response_schemas,
@@ -222,7 +222,7 @@ def _generate_header_param_mutations(endpoint: EndpointModel) -> list[TestScenar
     base_headers = _build_base_header_params(endpoint)
 
     for param in endpoint.header_params:
-        for bad_value in get_mutations(param.schema_type):
+        for category, bad_value in get_mutations(param.schema_type):
             scenarios.append(TestScenario(
                 endpoint=endpoint.path,
                 method=endpoint.method,
@@ -230,7 +230,7 @@ def _generate_header_param_mutations(endpoint: EndpointModel) -> list[TestScenar
                 path_params=base_path,
                 query_params=base_query,
                 header_params={**base_headers, param.name: bad_value},
-                mutation_type="type_mutation" if not isinstance(bad_value, str) else "boundary",
+                mutation_type=category,
                 mutated_field=param.name,
                 description=f"Header param '{param.name}' = {repr(bad_value)[:50]}",
                 response_schemas=endpoint.response_schemas,
