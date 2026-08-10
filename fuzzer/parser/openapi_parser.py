@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from fuzzer.models import EndpointModel, ParameterModel, ParsedSpec
+from fuzzer.parser.dependency_graph import extract_resource_links
 from fuzzer.parser.validator import OpenAPIValidationError, validate_spec
 
 logger = logging.getLogger(__name__) # logger za praćenje rada parsera
@@ -101,12 +102,15 @@ def _parse_raw(raw: dict[str, Any]) -> ParsedSpec:
     if skipped:
         logger.info("Preskočeni pathovi: %s", skipped)
 
+    resource_links = extract_resource_links(endpoints)
+
     return ParsedSpec(
         title=str(info.get("title", "Unknown API")),
         version=str(info.get("version", "unknown")),
-        #verziju OpenAPI standarda koji je koriscen za pisanje spec-a 
+        #verziju OpenAPI standarda koji je koriscen za pisanje spec-a
         openapi_version=str(resolved.get("openapi", "")),
         endpoints=endpoints,
+        resource_links=resource_links,
     )
 
 #izvlaci detalje za jedan endopoint

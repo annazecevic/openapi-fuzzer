@@ -47,9 +47,55 @@ def main() -> int:
 
     print(f"      {spec.summary()}")
 
+    if spec.resource_links:
+        print(f"      Otkriveno {len(spec.resource_links)} zavisnosti između endpointa:")
+        for link in spec.resource_links:
+            print(f"        {link.producer_method} {link.producer_endpoint} "
+                  f"[{link.producer_field}] → {link.consumer_endpoint} [{link.consumer_param}]")
+
     print(f"\n[2/5] Generisanje test scenarija...")
     scenarios = generate_scenarios(spec.endpoints)
     print(f"      Generisano {len(scenarios)} scenarija")
+
+    if spec.resource_links:
+        print(f"      Povezivanje zavisnih resursa (stvaran ID umesto podrazumevanog)...")
+        for link in spec.resource_links:
+            producer_label = f"{link.producer_method} {link.producer_endpoint}"
+
+            baseline = next(
+                (s for s in scenarios
+                 if s.endpoint == link.producer_endpoint
+                 and s.method == link.producer_method
+                 and s.mutation_type == "baseline"),
+                None,
+            )
+
+            real_value = None
+            if baseline is not None:
+                producer_results = run_all(
+                    [baseline],
+                    base_url=args.url,
+                    token=args.token,
+                    timeout=args.timeout,
+                    concurrency=1,
+                    requests_per_second=args.rate_limit,
+                )
+                producer_result = producer_results[0]
+                if 200 <= producer_result.status_code < 300 and isinstance(producer_result.response_json, dict):
+                    real_value = producer_result.response_json.get(link.producer_field)
+
+            if real_value is None:
+                print(f"      Nije uspelo povezivanje {producer_label} → "
+                      f"{link.consumer_endpoint}, koriste se podrazumevane vrednosti")
+                continue
+
+            for scenario in scenarios:
+                if scenario.endpoint != link.consumer_endpoint:
+                    continue
+                if scenario.mutated_field == link.consumer_param:
+                    continue
+                if link.consumer_param in scenario.path_params:
+                    scenario.path_params[link.consumer_param] = real_value
 
     print(f"\n[3/5] Izvršavanje fuzz testova na: {args.url} "
           f"(konkurentnost: {args.concurrency})")

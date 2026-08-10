@@ -48,6 +48,16 @@ class TestResult(BaseModel):
     response_schema: Dict[str, Any] = Field(default_factory=dict)
     response_json: Optional[Any] = None
 
+# Veza između endpointa koji proizvodi resurs (npr. POST vraća id) i
+# endpointa koji taj id koristi kao path parametar (npr. GET/PUT/DELETE
+# po id-ju) — ovo pravi extract_resource_links() u dependency_graph.py
+class ResourceLink(BaseModel):
+    producer_endpoint: str      # npr. "/books"
+    producer_method: str        # npr. "POST"
+    producer_field: str         # npr. "id" — polje iz response šeme
+    consumer_endpoint: str      # npr. "/books/{bookId}"
+    consumer_param: str         # npr. "bookId" — path param koji koristi tu vrednost
+
 # Finalni, kompletan rezultat parsiranja spec fajla — ovo pravi
 # _parse_raw() u parseru, sadrži listu svih EndpointModel objekata
 class ParsedSpec(BaseModel):
@@ -55,6 +65,7 @@ class ParsedSpec(BaseModel):
     version: str = "unknown"
     openapi_version: str
     endpoints: List[EndpointModel] = Field(default_factory=list)
+    resource_links: List[ResourceLink] = Field(default_factory=list)
 
     @property
     def total_endpoints(self) -> int:
