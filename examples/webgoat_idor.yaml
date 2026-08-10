@@ -26,7 +26,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: Profil pronađen
@@ -43,11 +43,16 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
+            # Tipovi userId i role potvrđeni uživo protiv WebGoat 2025.3 (docker
+            # webgoat/webgoat), tri nezavisna izvora u browseru se slažu:
+            # {role=3, userId=2342384, ...} — oba integer, ne string. PUT telo
+            # pretpostavljeno istog formata (REST konvencija, isti path za GET/PUT
+            # prema zvaničnom WebGoat lesson metadata JSON-u).
             schema:
               type: object
               required:
@@ -61,11 +66,11 @@ paths:
                 color:
                   type: string
                 role:
-                  type: string
+                  type: integer
                 size:
                   type: string
                 userId:
-                  type: string
+                  type: integer
       responses:
         "200":
           description: Profil ažuriran
