@@ -45,6 +45,10 @@ paths:
       responses:
         "201":
           description: Knjiga kreirana
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
         "400":
           description: Loš zahtev
  

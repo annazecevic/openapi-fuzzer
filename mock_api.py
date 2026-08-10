@@ -12,24 +12,26 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
  
 app = FastAPI(title="Mock Bookstore API")
- 
- 
+
+_books = {
+    1: {"id": 1, "title": "Clean Code", "author": "Robert Martin"},
+    2: {"id": 2, "title": "The Pragmatic Programmer", "author": "Hunt & Thomas"},
+}
+_next_id = 3
+
 
 @app.get("/books")
 def list_books(limit: int = 10, genre: str = None):
-    return [
-        {"id": 1, "title": "Clean Code", "author": "Robert Martin"},
-        {"id": 2, "title": "The Pragmatic Programmer", "author": "Hunt & Thomas"},
-    ]
- 
- 
+    return list(_books.values())
+
+
 @app.post("/books")
 async def create_book(request: Request):
     try:
         body = await request.json()
     except Exception:
         return JSONResponse(status_code=400, content={"error": "Invalid JSON"})
- 
+
     # Namerno loše ponašanje — ako title nije string, server crasha (500)
     title = body.get("title")
     # BUG-01: Server puca (500) ako je title lista umesto string
@@ -40,7 +42,11 @@ async def create_book(request: Request):
     # Namerno loše ponašanje — prihvata prazan title bez validacije (contract mismatch)
     # BUG-02: Prihvata zahtev bez obaveznog title polja, vraca 201
     # BUG-03: Prihvata zahtev bez obaveznog author polja, vraca 201
-    return JSONResponse(status_code=201, content={"id": 3, "title": title})
+    global _next_id
+    new_book = {"id": _next_id, "title": title, "author": body.get("author")}
+    _books[_next_id] = new_book
+    _next_id += 1
+    return JSONResponse(status_code=201, content=new_book)
  
  
 # ---------------------------------------------------------------------------
@@ -50,8 +56,13 @@ async def create_book(request: Request):
 @app.get("/books/{bookId}")
 def get_book(bookId: str):
     # Namerno — prihvata bookId kao string, ne validira tip
-    if bookId == "1":
-        return {"id": 1, "title": "Clean Code", "author": "Robert Martin"}
+    try:
+        key = int(bookId)
+    except ValueError:
+        return JSONResponse(status_code=404, content={"error": "Not found"})
+
+    if key in _books:
+        return _books[key]
     return JSONResponse(status_code=404, content={"error": "Not found"})
  
  
