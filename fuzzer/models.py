@@ -8,6 +8,7 @@ class ParameterModel(BaseModel):
     location: str  # "query", "path", "header"
     required: bool = False
     schema_type: str = "string"
+    raw_schema: Dict[str, Any] = Field(default_factory=dict)
 
 # Pydantic model jednog potpuno parsiranog endpoint-a — ovo pravi
 # _extract_endpoint() u parseru

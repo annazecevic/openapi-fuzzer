@@ -1,7 +1,7 @@
 import asyncio
 
 from fuzzer.models import EndpointModel, ParameterModel
-from fuzzer.generator.mutation_catalog import _SQL_INJECTION, get_mutations
+from fuzzer.generator.mutation_catalog import _SQL_INJECTION, boundary_values_from_schema, get_mutations
 from fuzzer.generator.scenario_generator import (
     TestScenario,
     _default_value_from_schema,
@@ -37,6 +37,33 @@ def test_field_mutation_marks_sql_injection_as_injection_not_boundary():
     assert sql_injection_scenarios
     for scenario in sql_injection_scenarios:
         assert scenario.mutation_type == "injection"
+
+
+def test_boundary_values_from_schema_covers_min_and_max_edges():
+    mutations = boundary_values_from_schema({"minimum": 0, "maximum": 120})
+
+    values = {v for _, v in mutations}
+    assert {-1, 0, 120, 121}.issubset(values)
+    assert all(category == "boundary" for category, _ in mutations)
+
+
+def test_boundary_values_from_schema_empty_schema_returns_empty_list():
+    assert boundary_values_from_schema({}) == []
+
+
+def test_field_mutation_includes_schema_derived_maximum_boundary():
+    endpoint = EndpointModel(
+        path="/books",
+        method="POST",
+        request_schema={"year": "integer"},
+        raw_request_schema={
+            "properties": {"year": {"type": "integer", "maximum": 100}}
+        },
+    )
+
+    scenarios = _generate_field_mutations(endpoint)
+
+    assert any(s.payload["year"] == 101 for s in scenarios)
 
 
 def test_baseline_scenario_is_valid_and_marked():

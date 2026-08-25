@@ -92,3 +92,34 @@ CATALOG: dict[str, list[tuple[str, Any]]] = {
 
 def get_mutations(schema_type: str) -> list[tuple[str, Any]]:
     return CATALOG.get(schema_type, CATALOG["unknown"])
+
+
+def boundary_values_from_schema(raw_schema: dict) -> list[tuple[str, Any]]:
+    """Generiše boundary vrednosti IZRAČUNATE iz stvarno deklarisanih
+    granica u OpenAPI šemi (minimum/maximum/maxLength/minLength/enum),
+    umesto generičkih fiksnih vrednosti iz statičnog kataloga."""
+    values: list[tuple[str, Any]] = []
+    if not raw_schema:
+        return values
+
+    if "maximum" in raw_schema:
+        m = raw_schema["maximum"]
+        values.append(("boundary", m))
+        values.append(("boundary", m + 1))
+    if "minimum" in raw_schema:
+        m = raw_schema["minimum"]
+        values.append(("boundary", m))
+        values.append(("boundary", m - 1))
+    if "maxLength" in raw_schema:
+        n = raw_schema["maxLength"]
+        values.append(("boundary", "A" * n))
+        values.append(("boundary", "A" * (n + 1)))
+    if "minLength" in raw_schema:
+        n = raw_schema["minLength"]
+        if n > 0:
+            values.append(("boundary", "A" * (n - 1)))
+        values.append(("boundary", "A" * n))
+    if "enum" in raw_schema and raw_schema["enum"]:
+        values.append(("boundary", "NIJE_U_ENUM_LISTI"))
+
+    return values

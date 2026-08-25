@@ -16,6 +16,8 @@ paths:
           required: false
           schema:
             type: integer
+            minimum: 1
+            maximum: 100
         - name: genre
           in: query
           required: false
@@ -120,6 +122,8 @@ paths:
                   type: string
                 age:
                   type: integer
+                  minimum: 0
+                  maximum: 150
                 active:
                   type: boolean
       responses:
@@ -141,12 +145,16 @@ components:
           type: integer
         title:
           type: string
+          maxLength: 200
         author:
           type: string
         year:
           type: integer
+          minimum: 1450
+          maximum: 2030
         price:
           type: number
+          minimum: 0
         in_stock:
           type: boolean
  
@@ -158,11 +166,15 @@ components:
       properties:
         title:
           type: string
+          maxLength: 200
         author:
           type: string
         year:
           type: integer
+          minimum: 1450
+          maximum: 2030
         price:
           type: number
+          minimum: 0
         genre:
           type: string

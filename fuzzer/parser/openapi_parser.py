@@ -199,6 +199,7 @@ def _parse_parameter(raw: dict[str, Any]) -> ParameterModel | None:
         location=location,
         required=bool(raw.get("required", location == "path")),
         schema_type=schema_type,
+        raw_schema=schema,
     )
 
 #json semu pretvara u prostu mapu

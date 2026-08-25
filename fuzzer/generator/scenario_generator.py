@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from fuzzer.models import EndpointModel
-from fuzzer.generator.mutation_catalog import get_mutations
+from fuzzer.generator.mutation_catalog import boundary_values_from_schema, get_mutations
 
 #jedan konkretan test zahtev koji će fuzzer poslati ka API-ju
 @dataclass
@@ -82,7 +82,9 @@ def _generate_field_mutations(endpoint: EndpointModel) -> list[TestScenario]:
     header_params = _build_base_header_params(endpoint)
 
     for field_name, field_type in endpoint.request_schema.items():
-        for category, bad_value in get_mutations(field_type):
+        field_raw_schema = endpoint.raw_request_schema.get("properties", {}).get(field_name, {})
+        all_mutations = get_mutations(field_type) + boundary_values_from_schema(field_raw_schema)
+        for category, bad_value in all_mutations:
             mutated = base.copy()  # kopija da se ne pokvari originalna baza
             mutated[field_name] = bad_value # menja se samo jedno polje
             scenarios.append(TestScenario(
@@ -169,7 +171,8 @@ def _generate_path_param_mutations(endpoint: EndpointModel) -> list[TestScenario
     base_headers = _build_base_header_params(endpoint)
 
     for param in endpoint.path_params:
-        for category, bad_value in get_mutations(param.schema_type):
+        all_mutations = get_mutations(param.schema_type) + boundary_values_from_schema(param.raw_schema)
+        for category, bad_value in all_mutations:
             scenarios.append(TestScenario(
                 endpoint=endpoint.path,
                 method=endpoint.method,
@@ -196,7 +199,8 @@ def _generate_query_param_mutations(endpoint: EndpointModel) -> list[TestScenari
     base_headers = _build_base_header_params(endpoint)
 
     for param in endpoint.query_params:
-        for category, bad_value in get_mutations(param.schema_type):
+        all_mutations = get_mutations(param.schema_type) + boundary_values_from_schema(param.raw_schema)
+        for category, bad_value in all_mutations:
             scenarios.append(TestScenario(
                 endpoint=endpoint.path,
                 method=endpoint.method,
@@ -222,7 +226,8 @@ def _generate_header_param_mutations(endpoint: EndpointModel) -> list[TestScenar
     base_headers = _build_base_header_params(endpoint)
 
     for param in endpoint.header_params:
-        for category, bad_value in get_mutations(param.schema_type):
+        all_mutations = get_mutations(param.schema_type) + boundary_values_from_schema(param.raw_schema)
+        for category, bad_value in all_mutations:
             scenarios.append(TestScenario(
                 endpoint=endpoint.path,
                 method=endpoint.method,
