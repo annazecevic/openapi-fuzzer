@@ -17,6 +17,14 @@ Alat za automatizovano bezbednosno testiranje REST API-ja zasnovan na OpenAPI sp
 
 ---
 
+## Dependency graph — automatsko povezivanje zavisnih resursa
+
+Alat statički analizira spec (bez izvršavanja zahteva) i prepoznaje zavisnosti između endpointa: kada POST endpoint u dokumentovanom 2xx odgovoru vraća polje `id`, a neki drugi endpoint (GET/PUT/DELETE) deli isti prefiks putanje sa path parametrom (npr. `/books` → `/books/{bookId}`), alat pre glavnog testiranja izvrši taj POST zahtev, izvuče stvaran `id` iz odgovora, i koristi ga umesto izmišljene podrazumevane vrednosti pri testiranju zavisnog endpointa. Na taj način mutacije na poljima resursa (ne na samom id-ju) testiraju stvarno postojeći zapis, ne izmišljen identifikator koji možda ne postoji.
+
+**Ograničenje:** heuristika prepoznaje samo konvenciju gde je identifikator u odgovoru nazvan tačno `id` — drugačije imenovani identifikatori (npr. `bookId`, `uuid`) se ne prepoznaju.
+
+---
+
 ## Arhitektura
 
 ```
@@ -174,6 +182,8 @@ Alat pokriva tri propisana scenarija napada, pri čemu svaki scenario odgovara o
 | **Scenario 2** — Type Confusion | Slanje pogrešnih tipova na POST/PUT endpointe | `type_mutation` + `boundary` na body polju | `title = None, [], True, "A"×10000` |
 | **Scenario 3** — Schema Violation | Uklanjanje obaveznih polja, duboko nestovanje, prototype pollution | `structure` | `__deep_nest__` (8 nivoa), `__proto__` injection, nedostaje required polje |
 
+`boundary` mutacije uključuju i vrednosti IZRAČUNATE iz stvarno deklarisanih `minimum`/`maximum`/`maxLength`/`minLength` granica u OpenAPI šemi (ne samo generičke fiksne vrednosti iz statičnog kataloga) — npr. za polje sa `maximum: 2030` alat testira i `2030` (na granici) i `2031` (jedan iznad).
+
 ---
 
 ## Parametri komandne linije
@@ -328,8 +338,9 @@ openapi-fuzzer/
 │   ├── models.py            ← zajednički data modeli
 │   │
 │   ├── parser/
-│   │   ├── openapi_parser.py  ← čita OpenAPI YAML/JSON
-│   │   └── validator.py       ← validacija OpenAPI 3.x strukture
+│   │   ├── openapi_parser.py    ← čita OpenAPI YAML/JSON
+│   │   ├── validator.py         ← validacija OpenAPI 3.x strukture
+│   │   └── dependency_graph.py  ← prepoznaje zavisnosti između endpointa (producer → consumer)
 │   │
 │   ├── generator/
 │   │   ├── mutation_catalog.py   ← baza loših vrednosti po tipu
@@ -361,12 +372,13 @@ openapi-fuzzer/
 ├── ground_truth/
 │   └── known_bugs.yaml              ← unapred definisana lista poznatih bagova za mock_api.py
 │
-├── tests/                   ← 24 unit testa (pytest)
+├── tests/                   ← 30 unit testa (pytest)
 │   ├── test_oracle.py               ← detektor anomalija (contract/response/server failure)
 │   ├── test_scenario_generator.py   ← generisanje scenarija i mutacioni katalog
 │   ├── test_rate_limiter.py         ← token-bucket rate limiter
 │   ├── test_ground_truth_eval.py    ← ground truth evaluacija
-│   └── test_parser.py               ← YAML/JSON parsiranje spec fajlova
+│   ├── test_parser.py               ← YAML/JSON parsiranje spec fajlova
+│   └── test_dependency_graph.py     ← prepoznavanje zavisnosti između endpointa
 │
 ├── mock_api.py              ← lokalni ranjivi API za demonstraciju
 ├── docker-compose.yml       ← pokreće mock API + fuzzer jednom komandom (+ PDF)
