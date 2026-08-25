@@ -149,22 +149,28 @@ python3 -m fuzzer \
 ```
 
 ### Primer 5 — Spotify (studentski projekat)
-```bash
-# Pokreni Spotify servise (samo prvi put, gradi Docker image):
-cd /putanja/do/spotify && docker compose -f docker-compose.fuzzer.yml up -d
 
-# User Service (port 9080) — autentifikacija, OTP, magic-link
+**Napomena:** `user-service` sluša na portu 8080 — isti port koji po difoltu koristi `mock_api.py` iz ovog projekta. Ako ti je mock server pokrenut, ugasi ga pre pokretanja Spotify primera (ili obrnuto).
+
+Pre prvog pokretanja, u Spotify projektu kopiraj `services/user-service/.env.example` u `services/user-service/.env`.
+
+```bash
+cd /putanja/do/spotify
+
+# User Service (port 8080) — autentifikacija, OTP, magic-link
+docker compose up user-service mongodb
 python3 -m fuzzer \
   --spec examples/spotify_user_service.yaml \
-  --url http://localhost:9080 \
+  --url http://localhost:8080 \
   --output-dir reports/spotify-user \
   --concurrency 3 \
   --pdf
 
-# Content Service (port 9081) — žanrovi, izvođači, albumi, pesme
+# Content Service (port 8081) — žanrovi, izvođači, albumi, pesme
+docker compose up content-service content-mongodb nats
 python3 -m fuzzer \
   --spec examples/spotify_content_service.yaml \
-  --url http://localhost:9081 \
+  --url http://localhost:8081 \
   --output-dir reports/spotify-content \
   --concurrency 5 \
   --pdf
@@ -366,8 +372,8 @@ openapi-fuzzer/
 │   ├── bookstore.yaml              ← primer spec-a za mock API
 │   ├── bookstore.json              ← isti primer spec-a u JSON formatu
 │   ├── webgoat_idor.yaml           ← WebGoat IDOR spec (Scenario 1 — enumeracija)
-│   ├── spotify_user_service.yaml   ← Spotify User Service spec (port 9080)
-│   └── spotify_content_service.yaml← Spotify Content Service spec (port 9081)
+│   ├── spotify_user_service.yaml   ← Spotify User Service spec (port 8080)
+│   └── spotify_content_service.yaml← Spotify Content Service spec (port 8081)
 │
 ├── ground_truth/
 │   └── known_bugs.yaml              ← unapred definisana lista poznatih bagova za mock_api.py
