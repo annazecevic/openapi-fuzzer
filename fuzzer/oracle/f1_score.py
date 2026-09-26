@@ -1,3 +1,8 @@
+# CLI skripta — računa Precision, Recall i F1 Score iz ručno anotiranog
+# fajla (izlaz annotate.py, sa popunjenim true_positive i false_negatives).
+#
+# Pokretanje: python3 -m fuzzer.oracle.f1_score --ground-truth annotate.json
+
 import json
 from pathlib import Path
 

@@ -1,3 +1,9 @@
+# CLI skripta — iz report.json izdvaja samo rezultate sa anomalijama u
+# annotate.json, gde čovek ručno označava svaki nalaz kao stvaran ili lažan.
+# Taj fajl je ulaz za f1_score.py.
+#
+# Pokretanje: python3 -m fuzzer.oracle.annotate --input report.json
+
 import json
 import argparse
 import sys
@@ -20,7 +26,7 @@ def prepare_annotation_file(input_path: str, output_path: str) -> int:
             "status_code": r["status_code"],
             "response_time_ms": r["response_time_ms"],
             "anomalies": r["anomalies"],
-            "true_positive": None,  
+            "true_positive": None,  # popunjava čovek: true ili false
         }
         for r in data.get("results", [])
         if r.get("anomalies")
@@ -46,7 +52,7 @@ def prepare_annotation_file(input_path: str, output_path: str) -> int:
 
     return len(anomalies_only)
 
-# CLI deo — priprema annotate.json iz report.json rezultata.
+# CLI deo — priprema annotate.json iz report.json i ispisuje sledeće korake
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Pripremi fajl za rucnu anotaciju (F1 Score evaluacija)."

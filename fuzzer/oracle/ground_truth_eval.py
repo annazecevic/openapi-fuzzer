@@ -1,3 +1,9 @@
+# CLI skripta — automatska evaluacija alata poređenjem report.json sa unapred
+# definisanom listom poznatih bagova (ground_truth/known_bugs.yaml).
+#
+# Pokretanje: python3 -m fuzzer.oracle.ground_truth_eval \
+#     --report report.json --known-bugs ground_truth/known_bugs.yaml
+
 import json
 from pathlib import Path
 
@@ -11,6 +17,7 @@ def evaluate_against_ground_truth(report_path: str, known_bugs_path: str) -> dic
     report = json.loads(Path(report_path).read_text(encoding="utf-8"))
     known_bugs = yaml.safe_load(Path(known_bugs_path).read_text(encoding="utf-8")) or []
 
+    # Bagovi koje alat po dizajnu ne može da nađe ne ulaze u recall, samo se prikazuju
     findable_bugs = [b for b in known_bugs if b.get("findable_by_tool")]
     known_unfindable = [b["id"] for b in known_bugs if not b.get("findable_by_tool")]
 
@@ -26,6 +33,8 @@ def evaluate_against_ground_truth(report_path: str, known_bugs_path: str) -> dic
         method = r.get("method")
         mutated_field = r.get("mutated_field")
 
+        # Rezultat pogađa bag ako se poklapaju endpoint, metoda i polje, i ako
+        # je prijavljena očekivana vrsta anomalije
         anomalies = r.get("anomalies", [])
         matched_bug = next(
             (
@@ -48,6 +57,7 @@ def evaluate_against_ground_truth(report_path: str, known_bugs_path: str) -> dic
                 "anomalies": r.get("anomalies"),
             })
         else:
+            # Anomalija koja ne odgovara nijednom poznatom bagu
             false_positives.append({
                 "endpoint": endpoint,
                 "method": method,

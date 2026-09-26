@@ -1,3 +1,7 @@
+# HTTP runner — svaki TestScenario pretvara u stvaran HTTP zahtev (httpx,
+# asinhrono), meri vreme odgovora, hvata mrežne greške i vraća TestResult.
+# Paralelizam ograničava semafor (--concurrency), a brzinu RateLimiter.
+
 import asyncio
 import time
 from collections.abc import Callable
@@ -9,7 +13,7 @@ from fuzzer.generator.scenario_generator import TestScenario
 from fuzzer.runner.rate_limiter import RateLimiter
 
 
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = 10.0  # podrazumevani timeout po zahtevu, u sekundama
 
 # Ubacuje stvarne vrednosti umesto {placeholder}-a u putanji (npr. {id} -> 42)
 # i spaja je sa osnovnim URL-om
@@ -18,8 +22,9 @@ def _build_url(base_url: str, path: str, path_params: dict) -> str:
         path = path.replace(f"{{{param_name}}}", str(param_value))
     return base_url.rstrip("/") + path
 
-# Pravi HTTP zaglavlja — Content-Type/Accept su uvek tu, token se stavlja
-# kao Cookie ili Bearer u zavisnosti od oblika, plus dodatna zaglavlja iz scenarija
+# Pravi HTTP zaglavlja — Content-Type/Accept su uvek tu, token se šalje kao
+# Cookie (ako počinje sa "JSESSIONID=", npr. WebGoat) ili kao Bearer token,
+# plus dodatna zaglavlja iz scenarija (header parametri)
 def _build_headers(token: str | None, extra_headers: dict | None = None) -> dict:
     headers = {
         "Content-Type": "application/json",
@@ -45,13 +50,13 @@ async def _run_one(
     semaphore: asyncio.Semaphore,
     rate_limiter: RateLimiter,
 ) -> TestResult:
-    
+
     # Pravi konačan URL i zaglavlja za ovaj konkretan test
     url = _build_url(client.base_url.raw_path.decode(), scenario.endpoint, scenario.path_params)
     extra_headers = getattr(scenario, "header_params", {}) or {}
     headers = _build_headers(token, extra_headers)
 
- # Podrazumevane/neutralne vrednosti pre nego što se stvarno popune
+    # Podrazumevane/neutralne vrednosti pre nego što se stvarno popune
     status_code = 0
     response_time_ms = 0.0
     response_body: str | None = None
@@ -61,7 +66,8 @@ async def _run_one(
     response_schema: dict = {}
     response_json: dict | None = None
 
-# Semafor ograničava koliko se zahteva izvršava istovremeno
+    # Semafor ograničava koliko se zahteva izvršava istovremeno, a rate
+    # limiter koliko ih se pošalje u sekundi
     async with semaphore:
         await rate_limiter.acquire()
         try:
@@ -77,17 +83,18 @@ async def _run_one(
                 response = await client.delete(url, headers=headers, params=scenario.query_params)
             else:
                 raise ValueError(f"Nepodržana metoda: {scenario.method}")
-            
 
-            # Vreme trajanja (koristi se za performance anomaliju) 
+            # Vreme trajanja (koristi se za performance anomaliju)
             response_time_ms = (time.perf_counter() - start) * 1000
-            status_code = response.status_code # koristi se za server failure anomaliju
+            status_code = response.status_code  # koristi se za server failure anomaliju
             response_size_bytes = len(response.content)
             try:
-                response_body = response.text[:2000] # skraćeno, da se ne troši memorija
+                response_body = response.text[:2000]  # skraćeno, da se ne troši memorija
             except Exception:
                 response_body = "<binary>"  # odgovor nije tekstualan
 
+            # Dokumentovana šema za dobijeni status kod i parsiran JSON odgovor —
+            # detector ih kasnije poredi (RESPONSE_CONTRACT_MISMATCH)
             response_schema = scenario.response_schemas.get(status_code, {})
             try:
                 response_json = response.json()
@@ -106,12 +113,13 @@ async def _run_one(
             error_category = "CONNECT_ERROR"
 
         except Exception as exc:
-             # Bilo koja druga neočekivana greška (npr. nepodržana metoda)
+            # Bilo koja druga neočekivana greška (npr. nepodržana metoda)
             status_code = 0
             error_category = "CLIENT_ERROR"
             error_message = str(exc)
 
-# Pakuje sve prikupljene podatke u finalni rezultat testa
+    # Pakuje sve prikupljene podatke u finalni rezultat testa; passed je ovde
+    # samo preliminarno (bez 5xx), konačno ga postavlja detector.py
     return TestResult(
         endpoint=scenario.endpoint,
         method=scenario.method,
@@ -145,7 +153,7 @@ async def _run_all_async(
     semaphore = asyncio.Semaphore(concurrency)
     rate_limiter = RateLimiter(requests_per_second)
     completed = 0
-    lock = asyncio.Lock() # sprečava da dva zadatka istovremeno menjaju "completed"
+    lock = asyncio.Lock()  # sprečava da dva zadatka istovremeno menjaju "completed"
 
     async with httpx.AsyncClient(base_url=base_url, timeout=timeout) as client:
         # Izvršava jedan scenario i bezbedno javlja napredak
@@ -158,7 +166,7 @@ async def _run_all_async(
                     progress_cb(completed, len(scenarios), result)
             return result
 
-        # asyncio.gather čuva redosled
+        # asyncio.gather vraća rezultate istim redom kojim su scenariji prosleđeni
         results = await asyncio.gather(*[run_and_report(s) for s in scenarios])
 
     return list(results)

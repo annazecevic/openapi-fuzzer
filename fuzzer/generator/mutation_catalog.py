@@ -1,4 +1,9 @@
-#rečnik loših vrednosti po tipu (string, integer, boolean...)
+# Katalog "loših" vrednosti za fuzzing, grupisan po tipu polja (string,
+# integer, boolean...). Svaka vrednost ima kategoriju koja opisuje vrstu testa:
+#   boundary      — granične vrednosti (prazno, predugačko, 0, MAX_INT...)
+#   type_mutation — vrednost pogrešnog tipa (npr. broj umesto stringa)
+#   injection     — pokušaji ubacivanja (SQL injection, null bajt...)
+#   structure     — neočekivana struktura (duboko ugnježden objekat)
 
 from typing import Any
 
@@ -7,14 +12,15 @@ _SQL_INJECTION = "' OR '1'='1"
 _NULL_BYTE = "test\x00injection"
 
 
+# Tip polja → lista parova (kategorija, loša vrednost)
 CATALOG: dict[str, list[tuple[str, Any]]] = {
 
     "string": [
         ("boundary", ""),
         ("boundary", " "),
         ("boundary", _LONG_STRING),
-        ("injection", _SQL_INJECTION),
-        ("injection", _NULL_BYTE),
+        ("injection", _SQL_INJECTION),          # klasičan SQL injection
+        ("injection", _NULL_BYTE),              # null bajt — može da preseče string u C bibliotekama
         ("type_mutation", 123),
         ("type_mutation", None),
         ("type_mutation", []),
@@ -29,7 +35,7 @@ CATALOG: dict[str, list[tuple[str, Any]]] = {
         ("boundary", 99_999_999),
         ("boundary", -99_999_999),
         ("boundary", 2**31 - 1),         # MAX_INT — klasičan 32-bit overflow
-        ("boundary", -(2**31)),
+        ("boundary", -(2**31)),         # MIN_INT
         ("type_mutation", "abc"),
         ("type_mutation", ""),
         ("type_mutation", None),
@@ -78,9 +84,10 @@ CATALOG: dict[str, list[tuple[str, Any]]] = {
         ("type_mutation", []),
         ("injection", {"__proto__": {"admin": True}}),  # prototype pollution
         ("structure", {"l1": {"l2": {"l3": {"l4": {"l5": {"l6": {"l7": {"l8": "deep"}}}}}}}}),
-        ("boundary", [{"id": i, "value": "x" * 100} for i in range(500)]),
+        ("boundary", [{"id": i, "value": "x" * 100} for i in range(500)]),  # veliki niz umesto objekta
     ],
 
+    # Rezervna lista za polja čiji tip parser nije mogao da odredi
     "unknown": [
         ("type_mutation", None),
         ("type_mutation", ""),
@@ -90,14 +97,16 @@ CATALOG: dict[str, list[tuple[str, Any]]] = {
 }
 
 
+# Vraća fiksne loše vrednosti za dati tip iz kataloga; nepoznat tip dobija listu "unknown"
 def get_mutations(schema_type: str) -> list[tuple[str, Any]]:
     return CATALOG.get(schema_type, CATALOG["unknown"])
 
 
+# Generiše boundary vrednosti IZRAČUNATE iz stvarno deklarisanih granica u
+# OpenAPI šemi (minimum/maximum/maxLength/minLength/enum), umesto generičkih
+# fiksnih vrednosti iz kataloga — za svaku granicu testira se vrednost tačno
+# na granici (mora proći) i odmah preko nje (mora biti odbijena)
 def boundary_values_from_schema(raw_schema: dict) -> list[tuple[str, Any]]:
-    """Generiše boundary vrednosti IZRAČUNATE iz stvarno deklarisanih
-    granica u OpenAPI šemi (minimum/maximum/maxLength/minLength/enum),
-    umesto generičkih fiksnih vrednosti iz statičnog kataloga."""
     values: list[tuple[str, Any]] = []
     if not raw_schema:
         return values
@@ -116,10 +125,10 @@ def boundary_values_from_schema(raw_schema: dict) -> list[tuple[str, Any]]:
         values.append(("boundary", "A" * (n + 1)))
     if "minLength" in raw_schema:
         n = raw_schema["minLength"]
-        if n > 0:
+        if n > 0:  # string kraći od minimuma postoji samo ako je minLength > 0
             values.append(("boundary", "A" * (n - 1)))
         values.append(("boundary", "A" * n))
     if "enum" in raw_schema and raw_schema["enum"]:
-        values.append(("boundary", "NIJE_U_ENUM_LISTI"))
+        values.append(("boundary", "NIJE_U_ENUM_LISTI"))  # vrednost van dozvoljene liste
 
     return values

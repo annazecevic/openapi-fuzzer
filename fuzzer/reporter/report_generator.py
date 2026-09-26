@@ -1,6 +1,6 @@
-"""
-Generiše HTML, PDF i JSON izveštaj iz liste TestResult objekata.
-"""
+# Generiše HTML, PDF i JSON izveštaj iz liste TestResult objekata. HTML i
+# PDF se prave iz Jinja2 šablona u folderu templates/, a JSON je mašinski
+# čitljiv log koji koriste skripte za evaluaciju (annotate, ground_truth_eval).
 
 import json
 from datetime import datetime
@@ -11,7 +11,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from fuzzer.models import TestResult
 
 
-TEMPLATES_DIR = Path(__file__).parent / "templates"
+TEMPLATES_DIR = Path(__file__).parent / "templates"  # folder sa Jinja2 šablonima
 
 # json.dumps po defaultu upisuje Infinity/-Infinity/NaN kao gole tokene —
 # Python to ume da pročita nazad, ali nije validan JSON po specifikaciji
@@ -47,6 +47,7 @@ def _render_html(
     )
 
 
+# Generiše HTML izveštaj, snima ga na disk i vraća apsolutnu putanju do fajla
 def generate_html(
     results: list[TestResult],
     summary: dict,
@@ -54,10 +55,6 @@ def generate_html(
     api_version: str = "unknown",
     output_path: str = "report.html",
 ) -> str:
-    """
-    Generiše HTML izveštaj i snima ga na disk.
-    Vraća putanju do snimljenog fajla.
-    """
     html = _render_html(results, summary, api_title, api_version)
     output = Path(output_path)
     output.write_text(html, encoding="utf-8")
@@ -86,6 +83,9 @@ def _render_pdf_html(
     )
 
 
+# Generiše PDF izveštaj preko xhtml2pdf, snima ga na disk i vraća apsolutnu
+# putanju do fajla; baca RuntimeError ako xhtml2pdf nije instaliran ili
+# konverzija ne uspe
 def generate_pdf(
     results: list[TestResult],
     summary: dict,
@@ -95,7 +95,6 @@ def generate_pdf(
 ) -> str:
     # xhtml2pdf je opciona zavisnost — uvozi se ovde, ne na vrhu fajla,
     # da ne bude obavezna za sve koji ne koriste PDF izveštaje
-
     try:
         from xhtml2pdf import pisa
     except ImportError:
@@ -116,23 +115,20 @@ def generate_pdf(
     return str(output.resolve())
 
 
+# Generiše JSON log, snima ga na disk i vraća apsolutnu putanju do fajla
 def generate_json(
     results: list[TestResult],
     summary: dict,
     api_title: str = "Unknown API",
     output_path: str = "report.json",
 ) -> str:
-    """
-    Generiše JSON log i snima ga na disk.
-    Vraća putanju do snimljenog fajla.
-    """
     # Ovo je tačno report.json fajl koji se dalje koristi za pripremu
     # anotacije i računanje F1 Score metrike
     log = {
         "api": api_title,
         "generated_at": datetime.now().isoformat(),  # mašinski čitljiv format (za skripte)
         "summary": summary,
-        "results": [r.model_dump() for r in results], # Pydantic model -> običan rečnik
+        "results": [r.model_dump() for r in results],  # Pydantic model -> običan rečnik
     }
 
     output = Path(output_path)

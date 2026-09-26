@@ -4,7 +4,7 @@
 
 from fuzzer.models import EndpointModel, ResourceLink
 
-# Provera da li POST endpoint dokumentuje "id" polje u properties bilo kog
+# Proverava da li POST endpoint dokumentuje "id" polje u properties bilo kog
 # 2xx response schema-e — takav endpoint se smatra proizvođačem resursa
 def _is_producer(endpoint: EndpointModel) -> bool:
     if endpoint.method != "POST":
@@ -26,6 +26,7 @@ def extract_resource_links(endpoints: list[EndpointModel]) -> list[ResourceLink]
     for producer in producers:
         prefix = producer.path + "/"
         for endpoint in endpoints:
+            # Potrošač je GET/PUT/DELETE sa path parametrom, ispod putanje proizvođača
             if endpoint.method not in ("GET", "PUT", "DELETE"):
                 continue
             if not endpoint.path_params:
@@ -33,6 +34,7 @@ def extract_resource_links(endpoints: list[EndpointModel]) -> list[ResourceLink]
             if not endpoint.path.startswith(prefix):
                 continue
 
+            # Pretpostavka: id resursa ide u prvi path parametar (npr. {bookId})
             consumer_param = endpoint.path_params[0].name
             links.append(ResourceLink(
                 producer_endpoint=producer.path,

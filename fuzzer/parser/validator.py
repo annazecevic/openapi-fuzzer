@@ -1,16 +1,16 @@
-"""
-Ovaj fajl validira da li spec fajl zadovoljava osnovna pravila OpenAPI 3.x standarda,
-pre nego što parser počne da izvlači podatke iz njega.
-"""
+# Validira da li spec fajl zadovoljava osnovna pravila OpenAPI 3.x standarda,
+# pre nego što parser počne da izvlači podatke iz njega. Svaka greška nosi
+# jasnu poruku i, gde ima smisla, savet (hint) kako da se ispravi.
 
-# Prilagođen tip greške za OpenAPI validaciju
+# Prilagođen tip greške za OpenAPI validaciju — nasleđuje ValueError, a uz
+# poruku opciono prikazuje i savet (context) kako da se problem reši
 class OpenAPIValidationError(ValueError):
     def __init__(self, message: str, context: str = "") -> None:
         self.context = context
         full = f"OpenAPI validation error: {message}"
         if context:
             full += f"\n  Hint: {context}"
-        super().__init__(full) # prosleđuje kompletnu poruku roditeljskoj klasi ValueError
+        super().__init__(full)  # prosleđuje kompletnu poruku roditeljskoj klasi ValueError
 
 
 # Glavna funkcija validacije — redom poziva sve provere, staje čim neka ne prođe
@@ -31,7 +31,7 @@ def _check_is_dict(raw: object) -> None:
 # Proverava polje "openapi" — prepoznaje zastareli Swagger format, proverava tip i podržanu verziju
 def _check_openapi_field(raw: dict) -> None:
     version = raw.get("openapi")
-# Polje ne postoji — proveri da li je u pitanju zastareo Swagger 2.x format
+    # Polje ne postoji — proveri da li je u pitanju zastareo Swagger 2.x format
     if version is None:
         if "swagger" in raw:
             sw = raw.get("swagger", "?")
@@ -92,7 +92,7 @@ def _check_paths_block(raw: dict) -> None:
             "Blok 'paths' je prazan.",
             "Dodaj barem jedan endpoint u spec."
         )
-# Svaki ključ (naziv putanje) mora biti string koji počinje kosom crtom
+    # Svaki ključ (naziv putanje) mora biti string koji počinje kosom crtom
     for path_key in paths:
         if not isinstance(path_key, str) or not path_key.startswith("/"):
             raise OpenAPIValidationError(

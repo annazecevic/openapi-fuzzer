@@ -1,11 +1,16 @@
+# Oracle — za svaki TestResult odlučuje da li je odgovor servera anomalija.
+# Proveravaju se četiri vrste problema: pad servera (5xx/timeout/konekcija),
+# prihvaćen payload koji krši šemu zahteva, odgovor koji krši šemu odgovora,
+# i sporo vreme odgovora. Rezultati čiji je baseline pao označavaju se kao nepouzdani.
+
 import jsonschema
 
 from fuzzer.models import TestResult
 
 
-PERFORMANCE_THRESHOLD_MS = 2000.0 # prag iznad kog se vreme odgovora smatra problemom
+PERFORMANCE_THRESHOLD_MS = 2000.0  # prag iznad kog se vreme odgovora smatra problemom
 
-# Za jedan rezultat, proverava sve tri vrste anomalija i vraća listu problema
+# Za jedan rezultat proverava sve četiri vrste anomalija i vraća listu problema
 def detect(result: TestResult) -> list[str]:
     anomalies = []
     anomalies += _check_server_failure(result)
@@ -25,7 +30,7 @@ def _check_server_failure(result: TestResult) -> list[str]:
         return ["SERVER_FAILURE: Konekcija odbijena — server verovatno pao"]
     return []
 
-# Anomalija ako server vratio 2xx na payload koji krši OpenAPI šemu — proverava se
+# Anomalija ako je server vratio 2xx na payload koji krši OpenAPI šemu — proverava se
 # pravom JSON Schema validacijom, ne heuristikom po tipu mutacije
 def _check_contract_mismatch(result: TestResult) -> list[str]:
     if not (200 <= result.status_code < 300):
@@ -59,7 +64,7 @@ def _check_response_contract(result: TestResult) -> list[str]:
                 f"ne poštuje dokumentovanu šemu odgovora ({e.message})"]
     return []
 
-# Anomalija ako je vreme odgovora prešlo prag od 2 sekunde
+# Anomalija ako je vreme odgovora prešlo PERFORMANCE_THRESHOLD_MS (2 sekunde)
 def _check_performance(result: TestResult) -> list[str]:
     if result.response_time_ms > PERFORMANCE_THRESHOLD_MS:
         return [
@@ -79,8 +84,9 @@ def check_baselines(results: list[TestResult]) -> dict[tuple[str, str], bool]:
             baselines[(r.endpoint, r.method)] = ok
     return baselines
 
-# Primenjuje detekciju na celu listu rezultata, dodaje anomalije bez dupliranja,
-# ispravlja passed status ako je pronađen bilo kakav problem
+# Primenjuje detekciju na celu listu rezultata: dodaje anomalije bez dupliranja,
+# postavlja passed=False ako je pronađen bilo kakav problem, i označava
+# baseline_valid=False za mutacije čiji je kontrolni zahtev pao
 def analyze_results(results: list[TestResult]) -> list[TestResult]:
     for result in results:
         detected = detect(result)
@@ -90,6 +96,7 @@ def analyze_results(results: list[TestResult]) -> list[TestResult]:
         if result.anomalies:
             result.passed = False
 
+    # Druga faza: tek sad su poznate anomalije baseline zahteva
     baseline_status = check_baselines(results)
     for r in results:
         if r.mutation_type == "baseline":
@@ -100,7 +107,8 @@ def analyze_results(results: list[TestResult]) -> list[TestResult]:
 
     return results
 
-# Pravi statistički pregled — ukupno/prošlo/palo, i broj svake vrste anomalije
+# Pravi statistički pregled — ukupno/prošlo/palo, broj svake vrste anomalije
+# i broj nepouzdanih rezultata (mutacije čiji je baseline pao)
 def summary(results: list[TestResult]) -> dict:
     total = len(results)
     failed = [r for r in results if not r.passed]
