@@ -49,7 +49,7 @@ class TestResult(BaseModel):
     mutated_field: str = ""
     passed: bool = True
     request_schema: Dict[str, Any] = Field(default_factory=dict)
-    error_category: Optional[str] = None  # "TIMEOUT", "CONNECT_ERROR" ili "CLIENT_ERROR"
+    error_category: Optional[str] = None  # "TIMEOUT", "CONNECT_ERROR", "CONNECTION_CLOSED" (server zatvorio konekciju i posle ponovljenog pokušaja) ili "CLIENT_ERROR" (greška fuzzera, zahtev nije poslat)
     error_message: Optional[str] = None
     baseline_valid: bool = True  # False ako je kontrolni zahtev za isti endpoint pao
     response_schema: Dict[str, Any] = Field(default_factory=dict)  # dokumentovana šema za dobijeni status kod
@@ -63,6 +63,7 @@ class ResourceLink(BaseModel):
     producer_method: str        # npr. "POST"
     producer_field: str         # npr. "id" — polje iz response šeme
     consumer_endpoint: str      # npr. "/books/{bookId}"
+    consumer_method: str        # npr. "GET" — metoda potrošača (GET/PUT/DELETE)
     consumer_param: str         # npr. "bookId" — path param koji koristi tu vrednost
 
 # Finalni, kompletan rezultat parsiranja spec fajla — pravi ga _parse_raw()

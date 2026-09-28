@@ -29,6 +29,7 @@ def test_finds_link_for_producer_and_consumer():
     assert link.producer_method == "POST"
     assert link.producer_field == "id"
     assert link.consumer_endpoint == "/books/{bookId}"
+    assert link.consumer_method == "GET"
     assert link.consumer_param == "bookId"
 
 
@@ -62,3 +63,19 @@ def test_no_link_when_consumer_path_does_not_share_producer_prefix():
     links = extract_resource_links([producer, unrelated])
 
     assert links == []
+
+
+def test_one_link_per_consumer_method():
+    producer = _producer({
+        "type": "object",
+        "properties": {"id": {"type": "integer"}},
+    })
+    path_params = [ParameterModel(name="bookId", location="path", required=True, schema_type="integer")]
+    consumers = [
+        EndpointModel(path="/books/{bookId}", method=method, path_params=path_params)
+        for method in ("GET", "PUT", "DELETE")
+    ]
+
+    links = extract_resource_links([producer, *consumers])
+
+    assert [link.consumer_method for link in links] == ["GET", "PUT", "DELETE"]

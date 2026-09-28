@@ -43,6 +43,7 @@
   .val-total   { color: #0f172a; }
   .val-passed  { color: #16a34a; }
   .val-failed  { color: #dc2626; }
+  .val-skipped { color: #64748b; }
   .val-server  { color: #ea580c; }
   .val-contract{ color: #ca8a04; }
   .val-perf    { color: #7c3aed; }
@@ -129,6 +130,7 @@
   <tr>
     <td><span class="label">Ukupno</span><span class="value val-total">{{ summary.total }}</span></td>
     <td><span class="label">Prošlo</span><span class="value val-passed">{{ summary.passed }}</span></td>
+    <td><span class="label">Nije izvršeno</span><span class="value val-skipped">{{ summary.not_executed }}</span></td>
     <td><span class="label">Anomalija</span><span class="value val-failed">{{ summary.failed }}</span></td>
     <td><span class="label">Server Failure</span><span class="value val-server">{{ summary.server_failures }}</span></td>
     <td><span class="label">Contract Mismatch</span><span class="value val-contract">{{ summary.contract_mismatches }}</span></td>

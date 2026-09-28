@@ -1,276 +1,690 @@
-cat /mnt/user-data/outputs/report.html.j2
-Output
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenAPI Fuzzer — Izveštaj</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Izveštaj o fuzz testiranju — {{ title }}</title>
+<style>
+    :root {
+        --text: #1f2933;
+        --text-muted: #6b7480;
+        --text-faint: #9aa1ab;
+        --line: #d9dde3;
+        --line-soft: #eceff3;
+        --bg: #ffffff;
+        --bg-subtle: #f6f7f9;
+        --accent: #24405f;
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #0f1117;
-            color: #e2e8f0;
-            padding: 2rem;
-        }
+        --sf: #a8321f;        --sf-bg: #fbeeeb;   /* Server Failure */
+        --cm: #9a5b0f;        --cm-bg: #fbf2e4;   /* Contract Mismatch */
+        --rc: #4b3d8f;        --rc-bg: #efedf8;   /* Response Contract */
+        --perf: #5f6772;      --perf-bg: #eff1f3; /* Performance */
 
-        h1 { font-size: 1.8rem; font-weight: 700; color: #f8fafc; }
-        h2 { font-size: 1.1rem; font-weight: 600; color: #94a3b8; text-transform: uppercase;
-             letter-spacing: 0.05em; margin-bottom: 1rem; }
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
 
-        .header {
-            border-bottom: 1px solid #1e293b;
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
+    * { box-sizing: border-box; }
 
-        .header p { color: #64748b; margin-top: 0.3rem; font-size: 0.9rem; }
+    html { background: var(--bg); }
 
-        /* Summary kartice */
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2.5rem;
-        }
+    body {
+        margin: 0;
+        padding: 40px 24px 32px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+    }
 
-        .card {
-            background: #1e293b;
-            border-radius: 10px;
-            padding: 1.2rem 1.5rem;
-            border: 1px solid #334155;
-        }
+    .page { max-width: 1200px; margin: 0 auto; }
 
-        .card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase;
-                       letter-spacing: 0.05em; margin-bottom: 0.4rem; }
-        .card .value { font-size: 2rem; font-weight: 700; }
+    /* ---------- Zaglavlje ---------- */
+    .report-header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 16px;
+        margin-bottom: 32px;
+    }
+    .eyebrow {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+    }
+    h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+    .meta {
+        margin: 6px 0 0;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+    .meta strong { color: var(--text); font-weight: 600; }
+    .meta .sep { color: var(--text-faint); padding: 0 6px; }
 
-        .card.total   .value { color: #f8fafc; }
-        .card.passed  .value { color: #22c55e; }
-        .card.failed  .value { color: #ef4444; }
-        .card.server  .value { color: #f97316; }
-        .card.contract .value { color: #eab308; }
-        .card.perf    .value { color: #8b5cf6; }
+    /* ---------- Sekcije ---------- */
+    section { margin-bottom: 36px; }
+    h2 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+    }
+    .note {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
 
-        /* Tabela */
-        .table-wrap {
-            overflow-x: auto;
-            border-radius: 10px;
-            border: 1px solid #1e293b;
-        }
+    /* ---------- Sažetak ---------- */
+    .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        margin: 0;
+    }
+    .summary > div {
+        padding: 12px 16px;
+        border-left: 1px solid var(--line-soft);
+    }
+    .summary > div:first-child { border-left: 0; padding-left: 0; }
+    .summary dt {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    .summary dd {
+        margin: 2px 0 0;
+        font-size: 20px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+    .summary dd small {
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--text-muted);
+        margin-left: 4px;
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.875rem;
-        }
+    /* ---------- Tabele (zajedničko) ---------- */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th {
+        text-align: left;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        background: var(--bg-subtle);
+        border-bottom: 1px solid var(--line);
+        padding: 8px 10px;
+    }
+    td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line-soft);
+        vertical-align: top;
+    }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .visually-hidden {
+        position: absolute;
+        width: 1px; height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
 
-        thead {
-            background: #1e293b;
-        }
+    /* ---------- Pregled po kategoriji ---------- */
+    .categories { max-width: 760px; }
+    .categories td { vertical-align: middle; }
+    .categories .desc { color: var(--text-muted); font-size: 13px; }
+    .bar-track {
+        height: 6px;
+        background: var(--line-soft);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    .bar {
+        display: block;
+        height: 100%;
+        border-radius: 2px;
+    }
+    .bar.sf   { background: var(--sf); }
+    .bar.cm   { background: var(--cm); }
+    .bar.rc   { background: var(--rc); }
+    .bar.perf { background: var(--perf); }
+    .swatch {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 1px;
+        margin-right: 8px;
+        vertical-align: 0;
+    }
+    .swatch.sf   { background: var(--sf); }
+    .swatch.cm   { background: var(--cm); }
+    .swatch.rc   { background: var(--rc); }
+    .swatch.perf { background: var(--perf); }
 
-        thead th {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            color: #64748b;
-            font-weight: 600;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
+    /* ---------- Filteri ---------- */
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .segmented {
+        display: inline-flex;
+        flex-wrap: wrap;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .segmented button {
+        font: inherit;
+        font-size: 13px;
+        padding: 5px 12px;
+        border: 0;
+        border-left: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--text);
+        cursor: pointer;
+    }
+    .segmented button:first-child { border-left: 0; }
+    .segmented button:hover { background: var(--bg-subtle); }
+    .segmented button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #ffffff;
+    }
+    .segmented button .count {
+        color: var(--text-faint);
+        margin-left: 4px;
+        font-variant-numeric: tabular-nums;
+    }
+    .segmented button[aria-pressed="true"] .count { color: #c9d3de; }
+    .search {
+        font: inherit;
+        font-size: 13px;
+        padding: 5px 10px;
+        min-width: 260px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        color: var(--text);
+        background: var(--bg);
+    }
+    .search:focus, .segmented button:focus-visible, tr.row:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+    .visible-count {
+        margin-left: auto;
+        font-size: 13px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+    }
 
-        tbody tr {
-            border-top: 1px solid #1e293b;
-            transition: background 0.1s;
-        }
+    /* ---------- Tabela rezultata ---------- */
+    .results { table-layout: fixed; font-size: 13px; }
+    .results thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    .results col.c-idx    { width: 52px; }
+    .results col.c-method { width: 76px; }
+    .results col.c-mut    { width: 118px; }
+    .results col.c-field  { width: 14%; }
+    .results col.c-status { width: 108px; }
+    .results col.c-time   { width: 76px; }
+    .results col.c-find   { width: 21%; }
 
-        tbody tr:hover { background: #1e293b55; }
+    tr.row { cursor: pointer; }
+    tr.row:hover td { background: var(--bg-subtle); }
+    tr.row.is-open td { background: var(--bg-subtle); border-bottom-color: transparent; }
 
-        tbody td {
-            padding: 0.75rem 1rem;
-            vertical-align: top;
-            color: #cbd5e1;
-        }
+    .idx { color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .chevron {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        margin-right: 6px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        transform: rotate(-45deg);
+        vertical-align: 1px;
+    }
+    tr.row.is-open .chevron { transform: rotate(45deg); vertical-align: 3px; }
 
-        .method {
-            font-weight: 700;
-            font-family: monospace;
-            font-size: 0.8rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            display: inline-block;
-        }
+    .mono { font-family: var(--mono); font-size: 12px; }
+    .wrap { word-break: break-all; overflow-wrap: anywhere; }
 
-        .method.GET    { background: #064e3b; color: #6ee7b7; }
-        .method.POST   { background: #1e3a5f; color: #93c5fd; }
-        .method.PUT    { background: #451a03; color: #fdba74; }
-        .method.DELETE { background: #450a0a; color: #fca5a5; }
+    .method {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 0 5px;
+        border: 1px solid var(--line);
+        border-radius: 2px;
+        color: var(--text);
+        background: var(--bg);
+    }
 
-        .status {
-            font-family: monospace;
-            font-weight: 700;
-            font-size: 0.85rem;
-        }
+    .status { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+    .status.s-4xx { color: var(--text-muted); }
+    .status.s-5xx, .status.s-0 { color: var(--sf); }
+    .err-cat {
+        display: block;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--sf);
+        letter-spacing: 0.02em;
+    }
 
-        .status.ok   { color: #22c55e; }
-        .status.warn { color: #eab308; }
-        .status.err  { color: #ef4444; }
+    .tag {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 16px;
+        padding: 0 6px;
+        margin: 1px 4px 1px 0;
+        border: 1px solid transparent;
+        border-radius: 2px;
+        white-space: nowrap;
+    }
+    .tag.sf    { color: var(--sf);   background: var(--sf-bg);   border-color: #efcdc6; }
+    .tag.cm    { color: var(--cm);   background: var(--cm-bg);   border-color: #ecd5ad; }
+    .tag.rc    { color: var(--rc);   background: var(--rc-bg);   border-color: #d6d1ee; }
+    .tag.perf  { color: var(--perf); background: var(--perf-bg); border-color: #d9dde2; }
+    .tag.other { color: var(--text); background: var(--bg-subtle); border-color: var(--line); }
+    .tag.flag  { color: var(--text-muted); background: var(--bg); border-color: var(--line); font-weight: 500; }
+    .none { color: var(--text-faint); }
 
-        .anomaly-tag {
-            display: inline-block;
-            font-size: 0.7rem;
-            font-weight: 600;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            margin: 0.1rem 0.1rem 0.1rem 0;
-        }
+    /* Redovi bez anomalija su vizuelno mirniji */
+    tbody.result.is-pass tr.row td { color: var(--text-muted); }
+    tbody.result.is-pass .method { color: var(--text-muted); }
 
-        .tag-SERVER_FAILURE    { background: #431407; color: #fb923c; }
-        .tag-CONTRACT_MISMATCH { background: #422006; color: #fbbf24; }
-        .tag-PERFORMANCE_ANOMALY { background: #2e1065; color: #c4b5fd; }
+    /* ---------- Detalji reda ---------- */
+    tr.detail td {
+        background: var(--bg-subtle);
+        border-bottom: 1px solid var(--line);
+        padding: 4px 16px 16px 68px;
+        color: var(--text);
+    }
+    .detail-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 4px 24px;
+        margin: 0 0 12px;
+        font-size: 12px;
+    }
+    .detail-meta dt { color: var(--text-muted); }
+    .detail-meta dd { margin: 0; }
+    .detail h3 {
+        margin: 12px 0 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+    .anomaly-list { margin: 0; padding: 0; list-style: none; }
+    .anomaly-list li { margin: 0 0 4px; font-size: 13px; overflow-wrap: anywhere; word-break: break-word; }
+    pre.code {
+        margin: 0;
+        padding: 10px 12px;
+        max-height: 280px;
+        overflow: auto;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-all;
+        overflow-wrap: anywhere;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 2px;
+    }
+    .truncated { font-size: 12px; color: var(--text-muted); margin: 4px 0 0; }
 
-        .payload {
-            font-family: monospace;
-            font-size: 0.75rem;
-            color: #64748b;
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+    tbody.result.is-filtered { display: none; }
+    .empty td { text-align: center; color: var(--text-muted); padding: 24px; }
 
-        .response-body {
-            font-family: monospace;
-            font-size: 0.72rem;
-            color: #475569;
-            max-width: 280px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+    /* ---------- Podnožje ---------- */
+    .report-footer {
+        margin-top: 40px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
 
-        .response-size {
-            font-size: 0.72rem;
-            color: #475569;
-        }
+    /* ---------- Uski ekrani ---------- */
+    @media (max-width: 860px) {
+        body { padding: 24px 16px; }
+        .summary { grid-template-columns: 1fr 1fr; }
+        .summary > div { padding-left: 0; border-left: 0; }
+        .categories .desc, .categories th:nth-child(2) { display: none; }
+        .table-scroll { overflow-x: auto; }
+        .results { min-width: 820px; }
+        .visible-count { margin-left: 0; }
+        .search { min-width: 0; width: 100%; }
+    }
 
-        .passed-row td { opacity: 0.45; }
-
-        .footer {
-            margin-top: 2rem;
-            color: #334155;
-            font-size: 0.8rem;
-            text-align: center;
-        }
-
-        .section { margin-bottom: 2.5rem; }
-    </style>
+    /* ---------- Štampa ---------- */
+    @media print {
+        @page { margin: 14mm; }
+        :root { --text: #000; --text-muted: #333; --text-faint: #555; }
+        body { padding: 0; font-size: 11px; color: #000; }
+        .controls, .chevron { display: none !important; }
+        tbody.result.is-filtered { display: table-row-group !important; }
+        .empty { display: none; }
+        .results thead th { position: static; }
+        .results thead { display: table-header-group; }
+        th, tr.row.is-open td, tr.row:hover td, tr.detail td { background: #fff !important; }
+        tbody.result { page-break-inside: avoid; break-inside: avoid; }
+        tbody.result.is-pass tr.row td, tbody.result.is-pass .method { color: #333; }
+        pre.code { max-height: none; overflow: visible; }
+        .table-scroll { overflow: visible; }
+        .results { min-width: 0; }
+        a { color: #000; }
+    }
+</style>
 </head>
 <body>
+{#- Kategorija anomalije se određuje po prefiksu teksta koji pravi detector.py.
+    RESPONSE_CONTRACT se proverava pre CONTRACT_MISMATCH jer ga sadrži kao podniz. -#}
+{%- macro cat_key(a) -%}
+    {%- if a.startswith('SERVER_FAILURE') -%}sf
+    {%- elif a.startswith('RESPONSE_CONTRACT') -%}rc
+    {%- elif a.startswith('CONTRACT_MISMATCH') -%}cm
+    {%- elif a.startswith('PERFORMANCE') -%}perf
+    {%- else -%}other
+    {%- endif -%}
+{%- endmacro -%}
+{%- set cat_labels = {
+    'sf': 'Server Failure',
+    'cm': 'Contract Mismatch',
+    'rc': 'Response Contract',
+    'perf': 'Performance',
+    'other': 'Ostalo'
+} -%}
+{%- set total = summary.get('total', 0) -%}
+{%- set failed = summary.get('failed', 0) -%}
+{%- set passed = summary.get('passed', 0) -%}
+{%- set categories = [
+    ('sf', summary.get('server_failures', 0), 'Server vratio 5xx na mutirani ulaz'),
+    ('cm', summary.get('contract_mismatches', 0), 'Neispravan ulaz prihvaćen sa 2xx'),
+    ('rc', summary.get('response_contract_mismatches', 0), 'Telo odgovora ne odgovara dokumentovanoj šemi'),
+    ('perf', summary.get('performance_anomalies', 0), 'Vreme odgovora iznad praga'),
+] -%}
+{%- set max_cat = categories | map(attribute=1) | max -%}
+<div class="page">
 
-<div class="header">
-    <h1>🔍 OpenAPI Fuzzer — Izveštaj</h1>
-    <p>API: <strong>{{ title }}</strong> &nbsp;·&nbsp;
-       Verzija: <strong>{{ version }}</strong> &nbsp;·&nbsp;
-       Generisano: <strong>{{ generated_at }}</strong></p>
-</div>
+<header class="report-header">
+    <p class="eyebrow">OpenAPI Fuzzer</p>
+    <h1>Izveštaj o fuzz testiranju</h1>
+    <p class="meta">
+        API: <strong>{{ title }}</strong><span class="sep">·</span>verzija <strong>{{ version }}</strong><span class="sep">·</span>generisano {{ generated_at }}
+    </p>
+</header>
 
-<!-- Summary kartice -->
-<div class="section">
-    <h2>Pregled</h2>
-    <div class="summary">
-        <div class="card total">
-            <div class="label">Ukupno testova</div>
-            <div class="value">{{ summary.total }}</div>
+<section aria-labelledby="h-summary">
+    <h2 id="h-summary">1. Sažetak</h2>
+    <dl class="summary">
+        <div>
+            <dt>Ukupno testova</dt>
+            <dd>{{ total }}</dd>
         </div>
-        <div class="card passed">
-            <div class="label">Prošlo</div>
-            <div class="value">{{ summary.passed }}</div>
+        <div>
+            <dt>Prošlo</dt>
+            <dd>{{ passed }}{% if total %}<small>{{ '%.1f' | format(passed / total * 100) }} %</small>{% endif %}</dd>
         </div>
-        <div class="card failed">
-            <div class="label">Anomalija</div>
-            <div class="value">{{ summary.failed }}</div>
+        <div>
+            <dt>Anomalija</dt>
+            <dd>{{ failed }}{% if total %}<small>{{ '%.1f' | format(failed / total * 100) }} %</small>{% endif %}</dd>
         </div>
-        <div class="card server">
-            <div class="label">Server Failure</div>
-            <div class="value">{{ summary.server_failures }}</div>
+        <div>
+            <dt>Nije izvršeno</dt>
+            <dd>{{ summary.get('not_executed', 0) }}</dd>
         </div>
-        <div class="card contract">
-            <div class="label">Contract Mismatch</div>
-            <div class="value">{{ summary.contract_mismatches }}</div>
+        <div>
+            <dt>Nepouzdani rezultati</dt>
+            <dd>{{ summary.get('unreliable_results', 0) }}</dd>
         </div>
-        <div class="card perf">
-            <div class="label">Performance</div>
-            <div class="value">{{ summary.performance_anomalies }}</div>
+        {% if summary.get('coverage_pct') is not none %}
+        <div>
+            <dt>API Coverage</dt>
+            <dd>{{ '%.1f' | format(summary.coverage_pct) }} %{% if summary.get('total_endpoints') is not none %}<small>{{ summary.get('tested_endpoints', 0) }}/{{ summary.total_endpoints }}</small>{% endif %}</dd>
         </div>
+        {% endif %}
+    </dl>
+    <p class="note">
+        „Nije izvršeno“ — zahtev nije poslat zbog greške na strani fuzzera.
+        „Nepouzdani rezultati“ — kontrolni (baseline) zahtev za isti endpoint nije uspeo, pa nalaz treba ručno proveriti.
+    </p>
+</section>
+
+<section aria-labelledby="h-categories">
+    <h2 id="h-categories">2. Anomalije po kategoriji</h2>
+    <table class="categories">
+        <thead>
+            <tr>
+                <th style="width: 190px;">Kategorija</th>
+                <th>Opis</th>
+                <th class="num" style="width: 70px;">Broj</th>
+                <th style="width: 200px;"><span class="visually-hidden">Udeo</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for key, count, desc in categories %}
+            <tr>
+                <td><span class="swatch {{ key }}"></span>{{ cat_labels[key] }}</td>
+                <td class="desc">{{ desc }}</td>
+                <td class="num">{{ count }}</td>
+                <td>
+                    <div class="bar-track">
+                        <span class="bar {{ key }}" style="width: {{ '%.1f' | format(count / max_cat * 100 if max_cat else 0) }}%;"></span>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <p class="note">Jedan rezultat može imati više anomalija, pa zbir po kategorijama može biti veći od ukupnog broja anomalija.</p>
+</section>
+
+<section aria-labelledby="h-results">
+    <h2 id="h-results">3. Rezultati testova</h2>
+
+    <div class="controls">
+        <div class="segmented" role="group" aria-label="Filter rezultata">
+            <button type="button" data-filter="all" aria-pressed="true">Svi<span class="count">{{ results | length }}</span></button>
+            <button type="button" data-filter="anomalies" aria-pressed="false">Samo anomalije<span class="count">{{ failed }}</span></button>
+            <button type="button" data-filter="sf" aria-pressed="false">Server Failure<span class="count">{{ categories[0][1] }}</span></button>
+            <button type="button" data-filter="cm" aria-pressed="false">Contract Mismatch<span class="count">{{ categories[1][1] }}</span></button>
+            <button type="button" data-filter="rc" aria-pressed="false">Response Contract<span class="count">{{ categories[2][1] }}</span></button>
+        </div>
+        <input type="search" class="search" id="search" placeholder="Pretraga po endpoint-u ili polju" aria-label="Pretraga po endpoint-u ili polju">
+        <span class="visible-count" aria-live="polite">Prikazano <strong id="visible-count">{{ results | length }}</strong> od {{ results | length }}</span>
     </div>
-</div>
 
-<!-- Tabela rezultata -->
-<div class="section">
-    <h2>Rezultati testova</h2>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Metoda</th>
-                    <th>Endpoint</th>
-                    <th>Status</th>
-                    <th>Vreme</th>
-                    <th>Mutacija</th>
-                    <th>Polje</th>
-                    <th>Anomalije</th>
-                    <th>Payload</th>
-                    <th>Response</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for r in results %}
-                <tr class="{{ 'passed-row' if r.passed else '' }}">
-                    <td><span class="method {{ r.method }}">{{ r.method }}</span></td>
-                    <td style="font-family: monospace;">{{ r.endpoint }}</td>
-                    <td>
-                        {% if r.status_code >= 500 or r.status_code == 0 %}
-                            <span class="status err">{{ r.status_code }}</span>
-                        {% elif r.status_code >= 400 %}
-                            <span class="status warn">{{ r.status_code }}</span>
-                        {% else %}
-                            <span class="status ok">{{ r.status_code }}</span>
+    <div class="table-scroll">
+    <table class="results">
+        <colgroup>
+            <col class="c-idx"><col class="c-method"><col class="c-endpoint"><col class="c-mut">
+            <col class="c-field"><col class="c-status"><col class="c-time"><col class="c-find">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Metoda</th>
+                <th>Endpoint</th>
+                <th>Mutacija</th>
+                <th>Polje</th>
+                <th>Status</th>
+                <th class="num">Vreme</th>
+                <th>Nalaz</th>
+            </tr>
+        </thead>
+        {% for r in results %}
+        {%- set ns = namespace(cats=[]) -%}
+        {%- for a in r.anomalies -%}{%- set ns.cats = ns.cats + [cat_key(a) | string] -%}{%- endfor -%}
+        {%- set not_executed = r.passed and r.error_category == 'CLIENT_ERROR' -%}
+        {%- set unreliable = not r.baseline_valid and r.mutation_type != 'baseline' -%}
+        <tbody class="result {{ 'is-fail' if r.anomalies else 'is-pass' }}"
+               data-anomaly="{{ 1 if r.anomalies else 0 }}"
+               data-cats="{{ ns.cats | unique | join(' ') }}"
+               data-search="{{ (r.endpoint ~ ' ' ~ r.mutated_field) | lower }}">
+            <tr class="row" tabindex="0" aria-expanded="false" aria-controls="d{{ loop.index }}">
+                <td class="idx"><span class="chevron" aria-hidden="true"></span>{{ loop.index }}</td>
+                <td><span class="method">{{ r.method }}</span></td>
+                <td class="mono wrap">{{ r.endpoint }}</td>
+                <td>{{ r.mutation_type }}</td>
+                <td class="mono wrap">{{ r.mutated_field if r.mutated_field else '' }}</td>
+                <td>
+                    {%- if r.status_code == 0 -%}
+                        <span class="status s-0">—</span>
+                        {%- if r.error_category %}<span class="err-cat">{{ r.error_category }}</span>{% endif -%}
+                    {%- elif r.status_code >= 500 -%}
+                        <span class="status s-5xx">{{ r.status_code }}</span>
+                    {%- elif r.status_code >= 400 -%}
+                        <span class="status s-4xx">{{ r.status_code }}</span>
+                    {%- else -%}
+                        <span class="status">{{ r.status_code }}</span>
+                    {%- endif -%}
+                </td>
+                <td class="num">{{ '%.0f' | format(r.response_time_ms) }} ms</td>
+                <td>
+                    {%- for a in r.anomalies -%}
+                        {%- set k = cat_key(a) | string -%}
+                        <span class="tag {{ k }}" title="{{ a }}">{{ cat_labels[k] }}</span>
+                    {%- endfor -%}
+                    {%- if not_executed -%}<span class="tag flag">nije izvršeno</span>{%- endif -%}
+                    {%- if unreliable -%}<span class="tag flag" title="Kontrolni (baseline) zahtev za ovaj endpoint nije uspeo">nepouzdano</span>{%- endif -%}
+                    {%- if not r.anomalies and not not_executed and not unreliable -%}<span class="none">—</span>{%- endif -%}
+                </td>
+            </tr>
+            <tr class="detail" id="d{{ loop.index }}" hidden>
+                <td colspan="8">
+                    <div class="detail">
+                        <dl class="detail-meta">
+                            <div><dt>Zahtev</dt><dd class="mono wrap">{{ r.method }} {{ r.endpoint }}</dd></div>
+                            <div><dt>Status</dt><dd>{{ r.status_code if r.status_code else '—' }}{% if r.error_category %} · {{ r.error_category }}{% endif %}</dd></div>
+                            <div><dt>Vreme odgovora</dt><dd>{{ '%.1f' | format(r.response_time_ms) }} ms</dd></div>
+                            <div><dt>Veličina odgovora</dt><dd>{{ r.response_size_bytes }} B</dd></div>
+                            <div><dt>Baseline</dt><dd>{{ 'validan' if r.baseline_valid else 'nije uspeo — rezultat nepouzdan' }}</dd></div>
+                        </dl>
+                        {% if r.error_message %}
+                        <h3>Greška</h3>
+                        <pre class="code">{{ r.error_message }}</pre>
                         {% endif %}
-                    </td>
-                    <td>{{ r.response_time_ms }}ms</td>
-                    <td>{{ r.mutation_type }}</td>
-                    <td style="font-family: monospace;">{{ r.mutated_field }}</td>
-                    <td>
-                        {% for anomaly in r.anomalies %}
-                            {% if 'SERVER_FAILURE' in anomaly %}
-                                <span class="anomaly-tag tag-SERVER_FAILURE">SERVER FAILURE</span>
-                            {% elif 'CONTRACT_MISMATCH' in anomaly %}
-                                <span class="anomaly-tag tag-CONTRACT_MISMATCH">CONTRACT MISMATCH</span>
-                            {% elif 'PERFORMANCE' in anomaly %}
-                                <span class="anomaly-tag tag-PERFORMANCE_ANOMALY">PERFORMANCE</span>
-                            {% endif %}
+                        {% if r.anomalies %}
+                        <h3>Anomalije</h3>
+                        <ul class="anomaly-list">
+                        {% for a in r.anomalies %}
+                            {%- set k = cat_key(a) | string %}
+                            <li><span class="tag {{ k }}">{{ cat_labels[k] }}</span>{{ a.split(': ', 1)[1] if ': ' in a else a }}</li>
                         {% endfor %}
-                    </td>
-                    <td><div class="payload">{{ r.payload | string }}</div></td>
-                    <td>
-                        <div class="response-size">{{ r.response_size_bytes }} B</div>
-                        {% if r.response_body %}
-                        <div class="response-body" title="{{ r.response_body }}">{{ r.response_body[:120] }}</div>
+                        </ul>
                         {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                        <h3>Payload</h3>
+                        <pre class="code">{{ r.payload | pprint if r.payload else '(prazno)' }}</pre>
+                        <h3>Odgovor</h3>
+                        {% if r.response_body %}
+                        <pre class="code">{{ r.response_body[:4000] }}</pre>
+                        {% if r.response_body | length > 4000 %}
+                        <p class="truncated">Skraćeno — prikazano prvih 4000 od {{ r.response_body | length }} karaktera.</p>
+                        {% endif %}
+                        {% else %}
+                        <pre class="code">(prazno)</pre>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+        <tbody class="empty" id="empty" {% if results %}hidden{% endif %}>
+            <tr><td colspan="8">Nema rezultata za izabrani filter.</td></tr>
+        </tbody>
+    </table>
     </div>
+</section>
+
+<footer class="report-footer">Generisano alatom OpenAPI Fuzzer · {{ generated_at }}</footer>
+
 </div>
 
-<div class="footer">
-    Generisano od strane OpenAPI Fuzzer &nbsp;·&nbsp; {{ generated_at }}
-</div>
+<script>
+(function () {
+    var results = Array.prototype.slice.call(document.querySelectorAll('tbody.result'));
+    var buttons = Array.prototype.slice.call(document.querySelectorAll('.segmented button'));
+    var search = document.getElementById('search');
+    var countEl = document.getElementById('visible-count');
+    var emptyEl = document.getElementById('empty');
+    var filter = 'all';
 
+    function matches(tb, query) {
+        if (filter === 'anomalies' && tb.getAttribute('data-anomaly') !== '1') return false;
+        if (filter !== 'all' && filter !== 'anomalies' &&
+            (' ' + tb.getAttribute('data-cats') + ' ').indexOf(' ' + filter + ' ') === -1) return false;
+        if (query && tb.getAttribute('data-search').indexOf(query) === -1) return false;
+        return true;
+    }
+
+    function apply() {
+        var query = search.value.trim().toLowerCase();
+        var visible = 0;
+        results.forEach(function (tb) {
+            var ok = matches(tb, query);
+            tb.classList.toggle('is-filtered', !ok);
+            if (ok) visible++;
+        });
+        countEl.textContent = visible;
+        emptyEl.hidden = visible !== 0;
+    }
+
+    buttons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            filter = btn.getAttribute('data-filter');
+            buttons.forEach(function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+            apply();
+        });
+    });
+    search.addEventListener('input', apply);
+
+    function toggle(row) {
+        var detail = row.nextElementSibling;
+        var open = detail.hidden;
+        detail.hidden = !open;
+        row.classList.toggle('is-open', open);
+        row.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    document.addEventListener('click', function (e) {
+        var row = e.target.closest ? e.target.closest('tr.row') : null;
+        if (!row) return;
+        // ne zatvaraj red ako korisnik samo selektuje tekst
+        if (window.getSelection && String(window.getSelection()).length > 0) return;
+        toggle(row);
+    });
+    document.addEventListener('keydown', function (e) {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('row')) {
+            e.preventDefault();
+            toggle(e.target);
+        }
+    });
+})();
+</script>
 </body>
 </html>

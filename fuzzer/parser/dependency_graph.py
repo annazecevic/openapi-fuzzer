@@ -41,6 +41,7 @@ def extract_resource_links(endpoints: list[EndpointModel]) -> list[ResourceLink]
                 producer_method=producer.method,
                 producer_field="id",
                 consumer_endpoint=endpoint.path,
+                consumer_method=endpoint.method,
                 consumer_param=consumer_param,
             ))
 

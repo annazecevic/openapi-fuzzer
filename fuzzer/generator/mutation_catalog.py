@@ -61,8 +61,7 @@ CATALOG: dict[str, list[tuple[str, Any]]] = {
         ("boundary", -0.001),
         ("boundary", 1e308),
         ("boundary", -1e308),           # ekstremno veliki/mali brojevi
-        ("boundary", float("inf")),     # beskonačnost
-        ("boundary", float("nan")),     # "Not a Number"
+        # inf i nan namerno izostavljeni — nisu validan JSON, httpx ih ne može poslati
         ("type_mutation", "abc"),
         ("type_mutation", None),
     ],

@@ -1,5 +1,7 @@
 import asyncio
 
+import httpx
+
 from fuzzer.models import EndpointModel, ParameterModel
 from fuzzer.generator.mutation_catalog import _SQL_INJECTION, boundary_values_from_schema, get_mutations
 from fuzzer.generator.scenario_generator import (
@@ -9,7 +11,7 @@ from fuzzer.generator.scenario_generator import (
     _generate_field_mutations,
     _generate_path_param_mutations,
 )
-from fuzzer.runner.http_runner import _run_one
+from fuzzer.runner.http_runner import _build_url, _run_one
 from fuzzer.runner.rate_limiter import RateLimiter
 
 
@@ -111,9 +113,6 @@ class _FakeResponse:
 
 
 class _FakeClient:
-    class base_url:
-        raw_path = b""
-
     def __init__(self):
         self.calls = []
 
@@ -154,3 +153,59 @@ def test_query_params_sent_for_post_put_delete():
         ))
 
         assert client.calls[0]["params"] == {"limit": 5}
+
+
+def test_number_mutations_exclude_inf_and_nan():
+    values = [value for _, value in get_mutations("number")]
+    for value in values:
+        if isinstance(value, float):
+            assert value == value, "nan ne može da se pošalje kao JSON"
+            assert value not in (float("inf"), float("-inf"))
+
+
+def test_build_url_with_empty_base_url_returns_relative_path():
+    assert _build_url("", "/books/{bookId}", {"bookId": 5}) == "/books/5"
+
+
+class _ClosingClient(_FakeClient):
+    # Prvi zahtev padne kao da je server zatvorio keep-alive konekciju
+    def __init__(self, failures: int):
+        super().__init__()
+        self.failures = failures
+
+    async def _record(self, method, url, headers, params, json):
+        self.calls.append({"method": method, "url": url})
+        if self.failures > 0:
+            self.failures -= 1
+            raise httpx.ReadError("")
+        return httpx.Response(201, json={"id": 1})
+
+
+def _post_scenario() -> TestScenario:
+    return TestScenario(
+        endpoint="/books", method="POST", payload={"title": "x"},
+        path_params={}, query_params={}, header_params={},
+        mutation_type="baseline", mutated_field="",
+    )
+
+
+def test_read_error_is_retried_once():
+    client = _ClosingClient(failures=1)
+    result = asyncio.run(_run_one(
+        _post_scenario(), client, token=None, timeout=5.0,
+        semaphore=asyncio.Semaphore(1), rate_limiter=RateLimiter(0),
+    ))
+    assert len(client.calls) == 2
+    assert result.status_code == 201
+    assert result.error_category is None
+
+
+def test_read_error_twice_is_connection_closed():
+    client = _ClosingClient(failures=2)
+    result = asyncio.run(_run_one(
+        _post_scenario(), client, token=None, timeout=5.0,
+        semaphore=asyncio.Semaphore(1), rate_limiter=RateLimiter(0),
+    ))
+    assert len(client.calls) == 2
+    assert result.status_code == 0
+    assert result.error_category == "CONNECTION_CLOSED"

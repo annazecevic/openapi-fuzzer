@@ -1,5 +1,5 @@
 from fuzzer.models import TestResult
-from fuzzer.oracle.detector import analyze_results, detect
+from fuzzer.oracle.detector import analyze_results, detect, summary
 
 
 SCHEMA = {
@@ -131,3 +131,28 @@ def test_response_json_missing_required_field_gives_response_contract_mismatch()
     result = _response_result({"feedback": "ok"}, RESPONSE_SCHEMA)
     anomalies = detect(result)
     assert any("RESPONSE_CONTRACT_MISMATCH" in a for a in anomalies)
+
+
+def test_connection_closed_is_server_failure():
+    result = TestResult(
+        endpoint="/books", method="POST", status_code=0, response_time_ms=0.0,
+        error_category="CONNECTION_CLOSED",
+    )
+    anomalies = detect(result)
+    assert any(a.startswith("SERVER_FAILURE") for a in anomalies)
+
+
+def test_summary_counts_client_error_as_not_executed_not_passed():
+    ok = TestResult(endpoint="/books", method="GET", status_code=200, response_time_ms=5.0)
+    client_error = TestResult(
+        endpoint="/books", method="POST", status_code=0, response_time_ms=0.0,
+        error_category="CLIENT_ERROR", error_message="nije poslat",
+    )
+    results = analyze_results([ok, client_error])
+
+    stats = summary(results)
+
+    assert stats["total"] == 2
+    assert stats["passed"] == 1
+    assert stats["not_executed"] == 1
+    assert stats["failed"] == 0

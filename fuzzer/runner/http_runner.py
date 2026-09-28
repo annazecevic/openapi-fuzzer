@@ -16,10 +16,13 @@ from fuzzer.runner.rate_limiter import RateLimiter
 DEFAULT_TIMEOUT = 10.0  # podrazumevani timeout po zahtevu, u sekundama
 
 # Ubacuje stvarne vrednosti umesto {placeholder}-a u putanji (npr. {id} -> 42)
-# i spaja je sa osnovnim URL-om
+# i spaja je sa osnovnim URL-om; sa praznim base_url-om vraća samo putanju,
+# koju httpx.AsyncClient sam spaja sa svojim base_url-om
 def _build_url(base_url: str, path: str, path_params: dict) -> str:
     for param_name, param_value in path_params.items():
         path = path.replace(f"{{{param_name}}}", str(param_value))
+    if not base_url:
+        return path
     return base_url.rstrip("/") + path
 
 # Pravi HTTP zaglavlja — Content-Type/Accept su uvek tu, token se šalje kao
@@ -40,6 +43,18 @@ def _build_headers(token: str | None, extra_headers: dict | None = None) -> dict
             headers[str(name)] = str(value)
     return headers
 
+# Šalje zahtev odabranom HTTP metodom — izdvojeno da bi _run_one mogao da ga ponovi
+async def _send(scenario: TestScenario, client: httpx.AsyncClient, url: str, headers: dict) -> httpx.Response:
+    if scenario.method == "GET":
+        return await client.get(url, headers=headers, params=scenario.query_params)
+    if scenario.method == "POST":
+        return await client.post(url, headers=headers, params=scenario.query_params, json=scenario.payload)
+    if scenario.method == "PUT":
+        return await client.put(url, headers=headers, params=scenario.query_params, json=scenario.payload)
+    if scenario.method == "DELETE":
+        return await client.delete(url, headers=headers, params=scenario.query_params)
+    raise ValueError(f"Nepodržana metoda: {scenario.method}")
+
 # Šalje jedan HTTP zahtev na osnovu scenarija, meri vreme, hvata greške
 # (timeout/connection/ostalo), i vraća TestResult sa svim prikupljenim podacima
 async def _run_one(
@@ -52,7 +67,9 @@ async def _run_one(
 ) -> TestResult:
 
     # Pravi konačan URL i zaglavlja za ovaj konkretan test
-    url = _build_url(client.base_url.raw_path.decode(), scenario.endpoint, scenario.path_params)
+    # Samo relativna putanja — httpx je sam spaja sa base_url-om klijenta
+    # (inače bi se putanja iz --url, npr. /WebGoat, pojavila dvaput)
+    url = _build_url("", scenario.endpoint, scenario.path_params)
     extra_headers = getattr(scenario, "header_params", {}) or {}
     headers = _build_headers(token, extra_headers)
 
@@ -72,17 +89,14 @@ async def _run_one(
         await rate_limiter.acquire()
         try:
             start = time.perf_counter()
-            # Bira se HTTP metoda i šalje se zahtev
-            if scenario.method == "GET":
-                response = await client.get(url, headers=headers, params=scenario.query_params)
-            elif scenario.method == "POST":
-                response = await client.post(url, headers=headers, params=scenario.query_params, json=scenario.payload)
-            elif scenario.method == "PUT":
-                response = await client.put(url, headers=headers, params=scenario.query_params, json=scenario.payload)
-            elif scenario.method == "DELETE":
-                response = await client.delete(url, headers=headers, params=scenario.query_params)
-            else:
-                raise ValueError(f"Nepodržana metoda: {scenario.method}")
+            try:
+                response = await _send(scenario, client, url, headers)
+            except (httpx.ReadError, httpx.RemoteProtocolError):
+                # Server je zatvorio keep-alive konekciju (npr. posle 500) — zahtev
+                # se ponavlja tačno jednom, preko nove konekcije; meri se samo
+                # pokušaj koji je uspeo
+                start = time.perf_counter()
+                response = await _send(scenario, client, url, headers)
 
             # Vreme trajanja (koristi se za performance anomaliju)
             response_time_ms = (time.perf_counter() - start) * 1000
@@ -111,6 +125,12 @@ async def _run_one(
             # Konekcija sa serverom nije uspela da se uspostavi
             status_code = 0
             error_category = "CONNECT_ERROR"
+
+        except (httpx.ReadError, httpx.RemoteProtocolError) as exc:
+            # I ponovljeni pokušaj je pao — server zatvara konekciju bez odgovora
+            status_code = 0
+            error_category = "CONNECTION_CLOSED"
+            error_message = str(exc) or type(exc).__name__
 
         except Exception as exc:
             # Bilo koja druga neočekivana greška (npr. nepodržana metoda)

@@ -13,7 +13,7 @@ Alat za automatizovano bezbednosno testiranje REST API-ja zasnovan na OpenAPI sp
 | **Server Failure** | API vraća 5xx ili ne odgovara | `POST /books` sa `title=[]` → 500 |
 | **Contract Mismatch** | API vraća 2xx na payload koji krši OpenAPI šemu zahteva | `POST /users` bez `email` polja → 201 (krši required) |
 | **Response Contract** | API vraća odgovor koji ne poštuje dokumentovanu šemu odgovora | `PUT /profile/{userId}` → 200 bez obaveznog `lessonCompleted` polja u telu odgovora |
-| **Performance Anomaly** | Odgovor sporiji od 2 sekunde | `POST /books` sa 50.000 znakova → timeout |
+| **Performance Anomaly** | Odgovor sporiji od 2 sekunde (odgovor ipak stigne; timeout se prijavljuje kao Server Failure) | npr. `GET /books?limit=99999999` → 200, ali tek posle 3 s |
 
 ---
 
@@ -86,6 +86,7 @@ pip install -r requirements.txt
 
 **Opcija A — Mock API** (lokalni testni server koji je namerno ranjiv):
 ```bash
+pip install fastapi uvicorn   # zavisnosti samo mock servera, nisu u requirements.txt
 uvicorn mock_api:app --port 8080
 ```
 
@@ -186,7 +187,7 @@ Alat pokriva tri propisana scenarija napada, pri čemu svaki scenario odgovara o
 |---|---|---|---|
 | **Scenario 1** — Enumeracija resursa | Mutiranje ID parametara u putanjama (`/profile/{userId}`) — testira kako endpoint reaguje na neočekivane/nevalidne vrednosti identifikatora resursa (ne dokazuje samo po sebi IDOR, koji je pitanje autorizacije) | `type_mutation`/`boundary`/`injection` na path params | `userId = -1, null, 99999999, "abc"` |
 | **Scenario 2** — Type Confusion | Slanje pogrešnih tipova na POST/PUT endpointe | `type_mutation` + `boundary` na body polju | `title = None, [], True, "A"×10000` |
-| **Scenario 3** — Schema Violation | Uklanjanje obaveznih polja, duboko nestovanje, prototype pollution | `structure` | `__deep_nest__` (8 nivoa), `__proto__` injection, nedostaje required polje |
+| **Scenario 3** — Schema Violation | Uklanjanje obaveznih polja, nepostojeće polje, duboko nestovanje; prototype pollution samo na poljima tipa `object` | `structure`; `injection` za `__proto__` | nedostaje required polje, `__extra_field__`, `__deep_nest__` (8 nivoa), `{"__proto__": {"admin": true}}` |
 
 `boundary` mutacije uključuju i vrednosti IZRAČUNATE iz stvarno deklarisanih `minimum`/`maximum`/`maxLength`/`minLength` granica u OpenAPI šemi (ne samo generičke fiksne vrednosti iz statičnog kataloga) — npr. za polje sa `maximum: 2030` alat testira i `2030` (na granici) i `2031` (jedan iznad).
 
@@ -200,9 +201,9 @@ Alat pokriva tri propisana scenarija napada, pri čemu svaki scenario odgovara o
 | `--url` | Da | Adresa ciljnog API-ja, npr. `http://localhost:8080` | — |
 | `--token` | Ne | Token za autentifikaciju — kao Bearer token (`abc123`) ili kao Cookie (`JSESSIONID=abc123`) | — |
 | `--output-dir` | Ne | Folder za izveštaje | `.` (trenutni folder) |
-| `--concurrency` | Ne | Broj paralelnih zahteva | `1` |
+| `--concurrency` | Ne | Broj paralelnih zahteva — najmanje 1; preko 100 nema efekta (httpx otvara najviše 100 konekcija) | `1` |
 | `--rate-limit` | Ne | Maksimalan broj zahteva u sekundi, 0 = bez ograničenja (token bucket rate limiting, ne fiksna pauza) | `0` |
-| `--timeout` | Ne | Timeout po zahtevu u sekundama | `10` |
+| `--timeout` | Ne | Timeout po zahtevu u sekundama — mora biti veći od 0 | `10` |
 | `--pdf` | Ne | Generisanje PDF izveštaja | isključeno |
 
 ---
@@ -214,22 +215,28 @@ Alat pokriva tri propisana scenarija napada, pri čemu svaki scenario odgovara o
       API: Bookstore API v1.0.0
 OpenAPI: 3.0.3
 Endpoints: 6
+      Otkriveno 3 zavisnosti između endpointa:
+        POST /books [id] → GET /books/{bookId} [bookId]
+        POST /books [id] → PUT /books/{bookId} [bookId]
+        POST /books [id] → DELETE /books/{bookId} [bookId]
 
 [2/5] Generisanje test scenarija...
-      Generisano 234 scenarija
+      Generisano 254 scenarija
+      Povezivanje zavisnih resursa (stvaran ID umesto podrazumevanog)...
 
 [3/5] Izvršavanje fuzz testova na: http://localhost:8080 (konkurentnost: 1)
-      [1/234] GET /books (baseline: __baseline__) → 200
-      [2/234] GET /books (boundary: limit) → 200
+      [1/254] GET /books (baseline: __baseline__) → 200
+      [2/254] GET /books (boundary: limit) → 200
       ...
 
 [4/5] Analiza rezultata...
-      Ukupno:               234        ← koliko testova je pokrenuto
-      Prošlo:               165        ← bez anomalija
-      Anomalija:            69         ← pronađeni propusti
+      Ukupno:               254        ← koliko testova je pokrenuto
+      Prošlo:               147        ← bez anomalija
+      Nije izvršeno:        0 (greška na strani fuzzera) ← zahtev nije mogao ni da se pošalje
+      Anomalija:            107        ← pronađeni propusti
         - Server Failure:     1        ← API se srušio (500)
-        - Contract Mismatch:  68       ← API prihvatio ulaz koji krši šemu zahteva
-        - Response Contract:  0        ← odgovor krši dokumentovanu šemu odgovora
+        - Contract Mismatch:  106      ← API prihvatio ulaz koji krši šemu zahteva
+        - Response Contract:  12       ← odgovor krši dokumentovanu šemu odgovora
         - Performance:        0        ← spori odgovori
       Nepouzdani rezultati: 0 (baseline pao) ← mutacije čiji je kontrolni zahtev i sam pao
       API Coverage:         6/6 endpointa (100.0%)
@@ -280,7 +287,7 @@ Primer ispisa (skraćeno):
     ✓ BUG-06
     ✓ BUG-07
 
-  Lažni pozitivi (45):
+  Lažni pozitivi (76):
     ? POST /books (polje: year)
         CONTRACT_MISMATCH: Server vratio 201 na payload koji krši šemu ('abc' is not of type 'integer') — polje 'year'
     ...
@@ -288,9 +295,9 @@ Primer ispisa (skraćeno):
   Poznati, očekivani propusti (alat ih po dizajnu ne može naći):
     • BUG-05
 
-  Precision: 0.3478
+  Precision: 0.2897
   Recall:    1.0000
-  F1 Score:  0.5161
+  F1 Score:  0.4493
 ──────────────────────────────────────────────────────
 ```
 Nizak precision u ovom primeru ne ukazuje na grešku u oracle-u — mock API namerno sadrži više propusta u validaciji tipova nego što `known_bugs.yaml` pokriva, pa svaki lažni pozitiv iz liste zapravo predstavlja stvarnu, samo neanotiranu grešku u `mock_api.py`.
@@ -357,7 +364,7 @@ openapi-fuzzer/
 │   │   └── rate_limiter.py  ← globalni token-bucket rate limiter
 │   │
 │   ├── oracle/
-│   │   ├── detector.py            ← detektuje anomalije (Server Failure, Contract Mismatch, Performance)
+│   │   ├── detector.py            ← detektuje anomalije (Server Failure, Contract Mismatch, Response Contract, Performance)
 │   │   ├── f1_score.py            ← računa F1 Score (Precision, Recall)
 │   │   ├── annotate.py            ← priprema fajl za ručnu anotaciju
 │   │   └── ground_truth_eval.py   ← automatska evaluacija protiv unapred pripremljene liste bagova
@@ -378,7 +385,7 @@ openapi-fuzzer/
 ├── ground_truth/
 │   └── known_bugs.yaml              ← unapred definisana lista poznatih bagova za mock_api.py
 │
-├── tests/                   ← 30 unit testa (pytest)
+├── tests/                   ← 43 unit testova (pytest)
 │   ├── test_oracle.py               ← detektor anomalija (contract/response/server failure)
 │   ├── test_scenario_generator.py   ← generisanje scenarija i mutacioni katalog
 │   ├── test_rate_limiter.py         ← token-bucket rate limiter
@@ -402,6 +409,7 @@ openapi-fuzzer/
 pip install -r requirements.txt
 
 # Pokretanje mock API-ja (u zasebnom terminalu)
+pip install fastapi uvicorn
 uvicorn mock_api:app --port 8080
 
 # Osnovno pokretanje
@@ -434,4 +442,4 @@ python3 -m fuzzer.oracle.f1_score --ground-truth reports/annotate.json
 |---|---|
 | `0` | Izvršavanje završeno, nisu pronađene anomalije |
 | `1` | Izvršavanje završeno, pronađene su anomalije |
-| `2` | Greška pri pokretanju (neispravan spec, API nedostupan) |
+| `2` | Neispravni argumenti, spec nije mogao da se učita, ili API nije dostupan |

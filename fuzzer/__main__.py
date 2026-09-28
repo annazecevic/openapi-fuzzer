@@ -35,9 +35,20 @@ def parse_args() -> argparse.Namespace:
 
 
 # Pokreće ceo tok fuzzera redom i vraća izlazni kod procesa:
-# 0 = nema anomalija, 1 = pronađene anomalije, 2 = spec nije mogao da se učita
+# 0 = nema anomalija, 1 = pronađene anomalije, 2 = neispravni argumenti,
+# spec nije mogao da se učita, ili API nije dostupan
 def main() -> int:
     args = parse_args()
+
+    # Provera argumenata — pogrešne vrednosti bi zaglavile fuzzer ili napravile lažne rezultate
+    if args.concurrency < 1:
+        print("GREŠKA: --concurrency mora biti najmanje 1.")
+        return 2
+    if args.timeout <= 0:
+        print("GREŠKA: --timeout mora biti veći od 0.")
+        return 2
+    if args.concurrency > 100:
+        print("UPOZORENJE: --concurrency preko 100 nema efekta — httpx podrazumevano otvara najviše 100 konekcija.")
 
     # Korak 1: učitavanje i validacija spec-a — greška ovde prekida ceo tok
     print(f"[1/5] Parsiranje OpenAPI spec-a: {args.spec}")
@@ -57,7 +68,7 @@ def main() -> int:
         print(f"      Otkriveno {len(spec.resource_links)} zavisnosti između endpointa:")
         for link in spec.resource_links:
             print(f"        {link.producer_method} {link.producer_endpoint} "
-                  f"[{link.producer_field}] → {link.consumer_endpoint} [{link.consumer_param}]")
+                  f"[{link.producer_field}] → {link.consumer_method} {link.consumer_endpoint} [{link.consumer_param}]")
 
     # Korak 2: generisanje baseline i mutiranih scenarija za svaki endpoint
     print(f"\n[2/5] Generisanje test scenarija...")
@@ -66,12 +77,16 @@ def main() -> int:
 
     # Povezivanje zavisnih resursa: za svaku zavisnost se prvo pošalje baseline
     # zahtev proizvođaču (npr. POST /books), iz odgovora se uzme stvaran id, i
-    # on se upiše u path parametar svih scenarija potrošača — tako GET/PUT/DELETE
-    # po id-ju gađaju resurs koji zaista postoji, umesto podrazumevane vrednosti
+    # on se upiše u path parametar scenarija potrošača — tako GET/PUT/DELETE
+    # po id-ju gađaju resurs koji zaista postoji, umesto podrazumevane vrednosti.
+    # Id se kešira po proizvođaču, pa se njegov baseline pošalje samo jednom
+    # i svi potrošači dele isti resurs
     if spec.resource_links:
         print(f"      Povezivanje zavisnih resursa (stvaran ID umesto podrazumevanog)...")
+        producer_values: dict[tuple[str, str], object] = {}
         for link in spec.resource_links:
             producer_label = f"{link.producer_method} {link.producer_endpoint}"
+            producer_key = (link.producer_method, link.producer_endpoint)
 
             # Kontrolni (validan) scenario proizvođača — on kreira resurs
             baseline = next(
@@ -82,8 +97,10 @@ def main() -> int:
                 None,
             )
 
-            real_value = None
-            if baseline is not None:
+            if producer_key in producer_values:
+                real_value = producer_values[producer_key]
+            elif baseline is not None:
+                real_value = None
                 producer_results = run_all(
                     [baseline],
                     base_url=args.url,
@@ -95,15 +112,18 @@ def main() -> int:
                 producer_result = producer_results[0]
                 if 200 <= producer_result.status_code < 300 and isinstance(producer_result.response_json, dict):
                     real_value = producer_result.response_json.get(link.producer_field)
+                producer_values[producer_key] = real_value
+            else:
+                real_value = None
 
             # Proizvođač nije vratio 2xx sa id-jem — scenariji ostaju sa podrazumevanim vrednostima
             if real_value is None:
                 print(f"      Nije uspelo povezivanje {producer_label} → "
-                      f"{link.consumer_endpoint}, koriste se podrazumevane vrednosti")
+                      f"{link.consumer_method} {link.consumer_endpoint}, koriste se podrazumevane vrednosti")
                 continue
 
             for scenario in scenarios:
-                if scenario.endpoint != link.consumer_endpoint:
+                if scenario.endpoint != link.consumer_endpoint or scenario.method != link.consumer_method:
                     continue
                 # Scenario koji namerno kvari baš taj parametar mora da zadrži svoju lošu vrednost
                 if scenario.mutated_field == link.consumer_param:
@@ -131,6 +151,12 @@ def main() -> int:
         progress_cb=on_progress,
     )
 
+    # Nijedan zahtev nije stigao do servera — to nisu anomalije API-ja nego
+    # pogrešan --url ili ugašen server, pa se ne prave lažni SERVER_FAILURE nalazi
+    if results and all(r.error_category == "CONNECT_ERROR" for r in results):
+        print(f"GREŠKA: API na {args.url} nije dostupan.")
+        return 2
+
     # Korak 4: detekcija anomalija i statistika
     print(f"\n[4/5] Analiza rezultata...")
     results = analyze_results(results)
@@ -146,6 +172,7 @@ def main() -> int:
 
     print(f"      Ukupno:               {stats['total']}")
     print(f"      Prošlo:               {stats['passed']}")
+    print(f"      Nije izvršeno:        {stats['not_executed']} (greška na strani fuzzera)")
     print(f"      Anomalija:            {stats['failed']}")
     print(f"        - Server Failure:     {stats['server_failures']}")
     print(f"        - Contract Mismatch:  {stats['contract_mismatches']}")

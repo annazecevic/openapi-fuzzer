@@ -28,6 +28,8 @@ def _check_server_failure(result: TestResult) -> list[str]:
         return ["SERVER_FAILURE: Timeout — server nije odgovorio na vreme"]
     if result.error_category == "CONNECT_ERROR":
         return ["SERVER_FAILURE: Konekcija odbijena — server verovatno pao"]
+    if result.error_category == "CONNECTION_CLOSED":
+        return ["SERVER_FAILURE: Server je zatvorio konekciju bez odgovora"]
     return []
 
 # Anomalija ako je server vratio 2xx na payload koji krši OpenAPI šemu — proverava se
@@ -107,11 +109,13 @@ def analyze_results(results: list[TestResult]) -> list[TestResult]:
 
     return results
 
-# Pravi statistički pregled — ukupno/prošlo/palo, broj svake vrste anomalije
-# i broj nepouzdanih rezultata (mutacije čiji je baseline pao)
+# Pravi statistički pregled — ukupno/prošlo/palo, broj svake vrste anomalije,
+# broj neizvršenih testova (CLIENT_ERROR — zahtev nije ni poslat, pa se ne
+# broji kao prošao) i broj nepouzdanih rezultata (mutacije čiji je baseline pao)
 def summary(results: list[TestResult]) -> dict:
     total = len(results)
     failed = [r for r in results if not r.passed]
+    not_executed = sum(1 for r in results if r.passed and r.error_category == "CLIENT_ERROR")
     server_failures = [r for r in failed if any("SERVER_FAILURE" in a for a in r.anomalies)]
     contract_mismatches = [r for r in failed if any(a.startswith("CONTRACT_MISMATCH") for a in r.anomalies)]
     response_contract_mismatches = [r for r in failed if any(a.startswith("RESPONSE_CONTRACT_MISMATCH") for a in r.anomalies)]
@@ -119,8 +123,9 @@ def summary(results: list[TestResult]) -> dict:
 
     return {
         "total": total,
-        "passed": total - len(failed),
+        "passed": total - len(failed) - not_executed,
         "failed": len(failed),
+        "not_executed": not_executed,
         "server_failures": len(server_failures),
         "contract_mismatches": len(contract_mismatches),
         "response_contract_mismatches": len(response_contract_mismatches),

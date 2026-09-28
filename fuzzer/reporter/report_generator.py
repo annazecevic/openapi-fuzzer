@@ -35,7 +35,7 @@ def _render_html(
 ) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
-        autoescape=select_autoescape(["html", "xml"]),
+        autoescape=select_autoescape(["html", "xml", "j2"]),
     )
     template = env.get_template("report.html.j2")
     return template.render(
@@ -71,7 +71,7 @@ def _render_pdf_html(
 ) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
-        autoescape=select_autoescape(["html", "xml"]),
+        autoescape=select_autoescape(["html", "xml", "j2"]),
     )
     template = env.get_template("report.pdf.j2")
     return template.render(
