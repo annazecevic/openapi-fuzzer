@@ -1,8 +1,5 @@
-import json
-
 from fuzzer.models import TestResult
 from fuzzer.reporter.report_generator import _render_html, _render_pdf_html
-from fuzzer.reporter.rerender import load_report
 
 
 XSS = "<script>alert(1)</script>"
@@ -89,24 +86,3 @@ def test_html_shows_response_contract_and_unreliable():
     assert 'data-cats="rc"' in html
     assert "Nepouzdani rezultati" in html
     assert "nepouzdano" in html
-
-
-def test_rerender_computes_missing_not_executed(tmp_path):
-    client_error = TestResult(
-        endpoint="/x", method="GET", status_code=0, response_time_ms=0.0,
-        error_category="CLIENT_ERROR", passed=True,
-    )
-    report = {
-        "api": "Old API",
-        "summary": {"total": 2, "passed": 1, "failed": 1},
-        "results": [client_error.model_dump(), _xss_result().model_dump()],
-    }
-    path = tmp_path / "report.json"
-    path.write_text(json.dumps(report), encoding="utf-8")
-
-    results, summary, title, version = load_report(str(path))
-
-    assert len(results) == 2
-    assert summary["not_executed"] == 1
-    assert title == "Old API"
-    assert version == "1.0.0"

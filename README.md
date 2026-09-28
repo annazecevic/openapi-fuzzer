@@ -385,7 +385,7 @@ openapi-fuzzer/
 ├── ground_truth/
 │   └── known_bugs.yaml              ← unapred definisana lista poznatih bagova za mock_api.py
 │
-├── tests/                   ← 43 unit testova (pytest)
+├── tests/                   ← 42 unit testova (pytest)
 │   ├── test_oracle.py               ← detektor anomalija (contract/response/server failure)
 │   ├── test_scenario_generator.py   ← generisanje scenarija i mutacioni katalog
 │   ├── test_rate_limiter.py         ← token-bucket rate limiter
