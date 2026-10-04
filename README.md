@@ -274,7 +274,7 @@ python3 -m fuzzer.oracle.ground_truth_eval \
   --known-bugs ground_truth/known_bugs.yaml
 ```
 
-Izlaz prikazuje koji su bag ID-jevi pronađeni, koji su promašeni, koji su lažni pozitivi (sa podacima o endpoint-u, metodi i mutiranom polju za svaki), bagove koje alat po dizajnu ne može da otkrije (npr. IDOR, koji je pitanje autorizacije, a ne šeme), kao i finalne Precision/Recall/F1 metrike (računate isključivo na osnovu bagova sa `findable_by_tool: true`).
+Izlaz prikazuje  koji su bag ID-jevi pronađeni, koji su promašeni, koji su lažni pozitivi (sa podacima o endpoint-u, metodi i mutiranom polju za svaki), bagove koje alat po dizajnu ne može da otkrije (npr. IDOR, koji je pitanje autorizacije, a ne šeme), kao i finalne Precision/Recall/F1 metrike (računate isključivo na osnovu bagova sa `findable_by_tool: true`).
 
 Primer ispisa (skraćeno):
 ```
